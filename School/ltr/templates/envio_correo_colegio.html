@@ -1,0 +1,130 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .enlace {
+            color: black;
+            background-color: lightblue;
+            height: 40px;
+        }
+    </style>
+
+</head>
+<body>
+   
+    <div class="container">
+        <div class="row">
+            <div class="col-md-2">
+            </div>
+            <div class="col-md-10">
+                <div align="left" style="font-size: 15px">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="media-heading">
+                                <div>
+                                    <span><strong>Estimado(a) {{ destinatario }}</strong></span>
+                                </div>
+                                <div>
+                                    <span><strong>Encargado {{ area }} {{ subarea }}</strong></span>
+                                </div>
+                                
+                                <br><br>
+                                Se ha ingresado un nuevo caso cuyo detalle se indica a continuación:
+                                <br>
+                            </div>
+                            <div class="table-responsive ">
+                                <table class="table row table-borderless" line-height="1">
+                                <!-- <table class="mi-tabla row table-borderless"> -->
+                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                        <tr>
+                                            <td><strong>N° Caso :</strong> {{ ticket.id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fecha ingreso :</strong>{{ ticket.fechacreacion|date:"d/m/Y" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>DATOS APODERADO</strong></td>
+                                            <tr>
+                                                <td><strong>Nombre :</strong>{{ apoderado }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Correo :</strong>{{ ticket.correo }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Fono :</strong>{{ ticket.telefono }}</td>
+                                            </tr>
+                                            <td><strong>DATOS ALUMNO</strong></td>
+                                            <tr>
+                                                <td><strong>Nombre :</strong>{{ alumno }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Nivel :</strong>{{ ticket.nivel.nombre }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Curso :</strong>{{ ticket.curso.nombre }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Tema contacto :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Sub-tema contacto :</strong> {{ ticket.subarea.nombre }} </td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Detalle: {{ ticket.motivo }}</strong></td>
+                                            </tr>
+                                        </tr>
+                                    </tbody>
+                                    <br><br>
+                                </table>
+                                <div class="row mt-4">
+                                    <div>
+                                        <p>
+                                            <span><strong>
+                                                Es importante que siempre responda haciendo click en los botones de este correo y no responder directamente desde su correo, ya que de esa manera su respuesta no quedará registrada en el sistema y el caso permanecerá abierto y a espera de respuesta por parte suya.
+                                            </strong></span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container" style="text-align:center;font-size:14px;font-family:verdana,sans-serif">
+
+            <!-- <img src="https://lh3.googleusercontent.com/2_jJjSn39yQS__As4bkXxtMTrpyr9vmiWPQhnwqXIIcx_sIHF3_PqXHvJHPWuKmPFPWBjVabgWfUKEboaRM6tCB3F3FcsnU=s1600" alt="b2" height="600px" width="1000px"><br>
+            <img src="https://lh3.googleusercontent.com/8NVehuPq2aEh6PhfKhhqcCAsk6BlMEJ2sno9IF-orlIGqsjME3cJIdew5BHrjHcfpRQMnHhw5ckKhkJH_RLvb22320Wo71Y=s1600" alt="b2" height="600px" width="1000px"><br>
+            <img src="https://lh3.googleusercontent.com/aA9Dmhh1dYlAWceqKP6WYCXXIPd3Apu-GyXm9WE3OoLx4XwaWOLg86YhVVtubKPfywWXK70tD9194hglR1dKAlQ2tpEIB9F9=s1600" alt="b2" height="600px" width="1000px"><br> -->
+            <!-- <img src="static/assets/images/Bienvenido2.png" alt="b2" height="120px" width="200px"><br> -->
+            <!-- <img src="panel/static/assets/images/Bienvenido3.png" alt="b3" height="120px width=200px"><br> -->
+            
+            <!-- <p>correo enviado en forma automática por IA-2024.....</p> -->
+            <!-- <a href="https://www.fundacionvonborries.cl/" target="_blank">www.fundacionvonborries.cl</a><br>        
+            <a href="https://www.instagram.com/vonborriesdesarrolloyfuturo/" target="_blank">www.instagram.com/vonborriesdesarrolloyfuturo</a><br>
+            +56 9 7442 6423 <br>
+            contacto@fundacionvonborries.cl <br> -->
+        </div>
+
+        <div class="div">
+            <!-- <img src="https://lh3.googleusercontent.com/rt6LTmP3F07B71fX43xx_U7Zh2_F93OG57WN8ive2x9bnRvmcfvsBib-yLZI9y4NVXa52lQ20b8MHOzFvMFs9RgqxpybAjod=s1600" alt="b1" height="180px" width="400px"><br> -->
+        </div>
+        <button class="enlace">
+            <a href="http://127.0.0.1:8000/formulario_respuesta_colegio/{{ ticket.id }}" style="text-decoration: none; color: black;background-color: lightblue;height: auto;">Para responder al apoderado hacer click aquí</a>
+        </button>
+            
+        
+        <!-- <span><strong>Para responder al apoderado hacer click aquí <a href="http://127.0.0.1:8000/formulario_respuesta_colegio/{{ ticket.id }}" >RESPONDER</a></strong></span> -->
+    </div>
+  
+</body>
+</html>
