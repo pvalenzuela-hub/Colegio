@@ -276,8 +276,8 @@
                                                                 </div>
 
                                                                 
-                                                                <input type="checkbox" id="cbox3" name="cbox3" value="3" />
-                                                                <label for="cbox3">Activar Correo automático seguimiento</label>
+                                                                <!-- <input type="checkbox" id="cbox3" name="cbox3" value="3" />
+                                                                <label for="cbox3">Activar Correo automático seguimiento</label> -->
 
                                                                 <button type="submit" class="btn btn-primary">Guardar</button>
                                                             </form>
@@ -297,31 +297,51 @@
                                                             <h3 class="card-title">Responsable</h3>
                                                         </div>
                                                         <div class="card-body">
-                                                            <div class="table-responsive">
-                                                                <table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
-                                                                    <thead>
-                                                                        <tr align="center">
-                                                                            <th class="wd-15p border-bottom-0">FECHA</th>
-                                                                            <th class="wd-15p border-bottom-0">DESCRIPCIÓN</th>
-                                                                            <th class="wd-20p border-bottom-0">MONTO</th>
-                                                                            <th class="wd-20p border-bottom-0">TIPO TARJETA</th>
-                                                                            <th class="wd-20p border-bottom-0">ESTADO</th>
+                                                            <div class="table-responsive ">
+                                                                <table class="table row table-borderless" line-height="1">
+                                                                <!-- <table class="mi-tabla row table-borderless"> -->
+                                                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                                                        <tr>
+                                                                            <td><strong>Area Responsable :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                                                            <td><strong>Tema : </strong>{{ ticket.subarea.nombre }}</td>
                                                                         </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {% for t in donor %}
+                                                                        <tr>
+                                                                            <td><strong>RESPONSABLE</strong></td>
                                                                             <tr>
-                                                                                <td align="center">{{ t.fechatra|date:"d/m/Y" }}</td>
-                                                                                <td align="center">{{ t.descripcion }}</td>
-                                                                                {% if t.response_code == 0 %}
-                                                                                    <td align='right'>{{ t.monto|floatformat:0|intcomma }}</td>
-                                                                                {% else %}
-                                                                                    <td align='right' class="text-danger fs-15 fw-semibold">{{ t.monto|floatformat:0|intcomma }}</td>
-                                                                                {% endif %}                                
-                                                                                <td align='center'>{{ socio.tipotarjeta }}</td>
-                                                                                <td align='center'>{{ t.status }}</td>
+                                                                                <td><strong>Nombre : </strong>{{ responsablearea.nombre }}</td>
+                                                                                <td><strong>Correo : </strong>{{ responsablearea.correo }}</td>
                                                                             </tr>
-                                                                        {% endfor %}
+                                                                            <tr>
+                                                                                <td>
+                                                                                    <strong>Teléfono : </strong>{{ responsablearea.telefono }}
+                                                                                </td>
+                                                                            </tr>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td><strong>COORDINADOR CICLO</strong></td>
+                                                                            <tr>
+                                                                                <td><strong>Nombre : </strong> {{ responsableciclo.nombre }}</td>
+                                                                                <td><strong>Correo : </strong> {{ responsableciclo.correo }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td><strong>Teléfono : </strong> {{ responsableciclo.telefono }}</td>
+                                                                            </tr>
+                                                                        </tr>
+                                                                       
+                                                                        <tr>
+                                                                            <td><strong>RESPONSABLE SUPERIOR</strong></td>
+                                                                            <tr>
+                                                                                <td><strong>Nombre :</strong>{{ responsablesuperrior.nombre }}</td>
+                                                                                <td><strong>Correo :</strong>{{ responsablesuperrior.correo }}</td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td><strong>Teléfono :</strong>{{ responsablesuperrior.telefono }}</td>
+                                                                            </tr>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                    <tbody class="col-lg-12 col-xl-6 p-0">
+
+
                                                                     </tbody>
                                                                 </table>
                                                             </div>

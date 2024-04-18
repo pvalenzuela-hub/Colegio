@@ -58,6 +58,7 @@ class Personas(models.Model):
     nombre = models.CharField(max_length=100)
     correo = models.EmailField()
     telefono = models.CharField(max_length=80)
+    cargo = models.CharField(max_length=80,default="")
 
     def __str__(self):
         return self.nombre
@@ -72,7 +73,7 @@ class Ciclos(models.Model):
     colegio = models.ForeignKey(Colegio,on_delete=models.CASCADE, default=1)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre+' '+str(self.colegio)
 
     class Meta:
         ordering = ["id"]

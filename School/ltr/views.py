@@ -84,6 +84,7 @@ def envio_correo_colegio(idticket):
         for responsable in responsablessubareaciclo:
             persona = get_object_or_404(Personas, id=responsable.persona.id)
             destinatario_correo = persona.nombre
+            cargo = persona.cargo
             to_adr.append(persona.correo)
 
         for responsable in coordinadorciclo:
@@ -110,13 +111,12 @@ def envio_correo_colegio(idticket):
             fechahora=fec
         )
 
-        template = get_template('envio_correo_colegio.html')
+        template = get_template('colegio_nuevo_ticket.html')
         content = template.render({
             'destinatario': destinatario_correo,
+            'cargo': cargo,
             'apoderado': nombreapoderado,
             'alumno': nombrealumno,
-            'area': area,
-            'subarea': subarea,
             'ticket': ticket,
         })
 
@@ -136,7 +136,7 @@ def envio_correo_colegio(idticket):
 def pruebacorreo(request):
     # botón desde Descripción para envío de correo
 
-    envio_correo_colegio(3)
+    envio_correo_colegio(1)
     return render(request,'exito.html')
 
 def formulariorespuesta_colegio(request,ticket_id):
@@ -173,8 +173,26 @@ def formulariorespuesta_colegio(request,ticket_id):
     
 def respuesta_colegio(request):
     if request.method == 'POST':
-        idticket = request.POST.get('idticket')
+        ticket = Ticket.objects.get(id=request.POST.get('idticket'))
+        marca_espera = 'cbox1' in request.POST
+        if marca_espera:
+            # si Colegio marcó opción, se debe cambiar a Conversación Colegio (3)
+            opcion = 3
+            estadoticket = Estadoticket.objects.get(id=opcion)
+            ticket.estadoticket_id = estadoticket.id
+            ticket.save()
+        else:
+            # si Colegio NO marcó opción, se debe cambiar a Conversación Apoderado (4)
+            opcion = 4
+            estadoticket = Estadoticket.objects.get(id=opcion)
+            ticket.estadoticket_id = estadoticket.id
+            ticket.save()
 
+        user = get_object_or_404(User, username='admin')
+        emisor = request.POST['emisor']
+        persona = get_object_or_404(Personas,id=emisor)
+        motivo = persona.nombre+' : '+request.POST['motivo']
+        Seguimiento.objects.create(ticket=ticket,comentario=motivo,user=user)
     
         return render(request, 'respuesta_ok.html')
     else:
@@ -279,7 +297,25 @@ class VisorTicket(DetailView):
 
         tcambioestado = date.today() - ticket.fechahoracambioestado.date()
         dias_de_cambio_estado = str(tcambioestado.days)  # Días de diferencia
-       
+
+        nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
+        responsablessubareaciclo = ResponsableSubareaCiclo.objects.filter(subarea=ticket.subarea, ciclo=nivel.ciclo)
+        coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
+        responsablesuperior = ResponsableSuperior.objects.filter(subarea=ticket.subarea)
+
+
+        for responsable in responsablessubareaciclo:
+            personaresponsable = get_object_or_404(Personas, id=responsable.persona.id)
+            
+
+        for responsable in coordinadorciclo:
+            personaciclo = get_object_or_404(Personas, id=responsable.persona.id)
+        
+
+        for responsable in responsablesuperior:
+            personasuperior = get_object_or_404(Personas,id=responsable.persona.id)
+
+
         contexto = {
             'ticket': ticket,
             'diastotalespera': diastotalespera,
@@ -288,6 +324,9 @@ class VisorTicket(DetailView):
             'estados': Estadoticket.objects.all(),
             # 'trx': self.model2.objects.filter(pk=pk),
             'encabezado': 'Visor de Ticket',
+            'responsablearea': personaresponsable,
+            'responsableciclo': personaciclo,
+            'responsablesuperrior': personasuperior,
         }
         return render(request, self.template_name, contexto)
 
@@ -342,6 +381,9 @@ def zanex(request):
     return render(request, 'ltr/index.html')
 
   
+def ejemplo_correo(request):
+    return render(request,'ejemplo_correo.html')
+
 def truncar_tabla_con_reset(request):
     with connection.cursor() as cursor:
         cursor.execute('DELETE FROM Ticket;')  

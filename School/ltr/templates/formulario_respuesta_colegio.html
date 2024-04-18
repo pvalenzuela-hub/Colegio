@@ -26,9 +26,9 @@
 									<div class="form-group">
 										<div class="row align-items-center">
 											<label class="form-label" for="nivel">Seleccione quien envía el mensaje</label><span class="required-input">*</span>
-											<select class="form-control" id="area" name="area" required="">
+											<select class="form-control" id="emisor" name="emisor" required="">
 												{% for dest in destinatarios %}
-												<option value="{{ dest.id }}">{{ dest.nombre }}</option>
+													<option value="{{ dest.id }}">{{ dest.nombre }}</option>
 												{% endfor %}
 											</select>
 											<!-- <div class="col-sm-9 col-xl-10">
@@ -49,7 +49,7 @@
 										<div class="row ">
 											<label class="col-sm-3 col-xl-2 form-label">Mensaje</label>
 											<div class="col-sm-9 col-xl-10">
-												<textarea rows="10" class="form-control"></textarea>
+												<textarea class="form-control mb-4" required="True" placeholder="Motivo" rows="10" name="motivo" id="motivo"></textarea>
 											</div>
 										</div>
 									</div>

@@ -33,6 +33,7 @@ urlpatterns = [
 
 
     path('truncarticket/', views.truncar_tabla_con_reset, name='truncar_ticket'),
+    path('ejemplo', views.ejemplo_correo, name='ejemplo-correo'),
     
 ###################################################< Zanex >######################################
 
