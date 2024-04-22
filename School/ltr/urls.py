@@ -19,17 +19,20 @@ from . import views
 
 urlpatterns = [
 
-    path('prueba/', views.pruebacorreo, name = 'prueba_correo'),
+    path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
     path('registroticket', views.registroticket, name='registroticket'),
     path('ajax/cargar-subareas/', views.cargar_subareas, name='ajax_cargar_subareas'),
     path('creaticket', views.creaticket, name = 'crearticket'),
     path('index', views.Index.as_view(),name="index"),
+    path('ticket/index', views.Index.as_view(),name="index"),
     path('', views.Index.as_view(),name="index"),
     path("ticket/<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
     path('ticket/guardacomentario', views.guardacomentario,name="graba-comentario"),
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),
+    path('ticket/enviacorreocolegio', views.envia_correo_colegio, name = 'enviacorreocolegio'),
+    
 
 
     path('truncarticket/', views.truncar_tabla_con_reset, name='truncar_ticket'),

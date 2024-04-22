@@ -1,448 +1,483 @@
-
 {% extends 'components/base.html' %}
 {% load static%}
 
 {% load tz %}
 {% load humanize %}
-        {% block styles %}
-            <style>
-                .mi-tabla tbody tr {
-                    padding: 0;
-                    margin: 0;
-                    left: 10;
-                    line-height: 1.5; /* Ajustar según sea necesario */
-                }
-            
-                .mi-tabla tbody tr td {
-                    padding: 4px 8px; /* Reduce el padding para disminuir la altura */
-                }
-            </style>
-        
-		{% endblock styles %}
-						{% block body %}
-						<!-- PAGE-HEADER -->
-						<div class="page-header">
-							<div>
-								<h1 class="page-title">Visor de Ticket</h1>
-								<ol class="breadcrumb">
-									<li class="breadcrumb-item"><a href="#">Ticket</a></li>
-                                    
-									<li class="breadcrumb-item active" aria-current="page">{{ encabezado }}</li>
-								</ol>
-							</div>
-							<div class="ms-auto pageheader-btn">
-								<!-- <a href="#" class="btn btn-success btn-icon text-white">
+{% block styles %}
+<style>
+    .mi-tabla tbody tr {
+        padding: 0;
+        margin: 0;
+        left: 10;
+        line-height: 1.5;
+        /* Ajustar según sea necesario */
+    }
+
+    .mi-tabla tbody tr td {
+        padding: 4px 8px;
+        /* Reduce el padding para disminuir la altura */
+    }
+</style>
+
+{% endblock styles %}
+{% block body %}
+<!-- PAGE-HEADER -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Visor de Ticket</h1>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="#">Ticket</a></li>
+
+            <li class="breadcrumb-item active" aria-current="page">{{ encabezado }}</li>
+        </ol>
+    </div>
+    <div class="ms-auto pageheader-btn">
+        <!-- <a href="#" class="btn btn-success btn-icon text-white">
 									<span>
 										<i class="fe fe-log-in"></i>
 									</span> Editar Datos
 								</a> -->
-							</div>
-						</div>
-						<!-- PAGE-HEADER END -->
+    </div>
+</div>
+<!-- PAGE-HEADER END -->
 
-						<!-- ROW-1 OPEN -->
-						<div class="row" id="user-profile">
-							<div class="col-lg-12">
-								<div class="card">
-									<div class="card-body">
-										<div class="wideget-user">
-											<div class="row">
-												<div class="col-lg-12 col-md-12 col-xl-6">
-													<div class="wideget-user-desc d-flex">
-														<div class="wideget-user-img">
-															<img class="" src="{% static ''%}assets/images/users/8.jpg" alt="img">
-														</div>
-														<div class="user-wrap">
-															<h4>Ticket N° {{ ticket.id }}</h4>
-                                                            <span><h3>Colegio: {{ ticket.subarea.area.colegio.nombre }}</h3></span>
-                                                            <span><h3>Tiempo de espera: {{ diastotalespera }}</h3></span>
-                                                            <span><h3>Estado: {{ ticket.estadoticket.nombre }}</h3></span>
-															<!-- <a href="#" class="btn btn-primary mt-1 mb-1"><i class="fa fa-rss"></i> Follow</a>
-															<a href="emailservices" class="btn btn-secondary mt-1 mb-1"><i class="fa fa-envelope"></i> E-mail</a> -->
-														</div>
-													</div>
-												</div>
-												<div class="col-lg-12 col-md-12 col-xl-6">
-													<div class="text-xl-right mt-4 mt-xl-0">
-														<!-- <a href="emailservices" class="btn btn-white">Message</a> -->
-														<!-- <a href="editprofile" class="btn btn-primary">Editar Datos</a> -->
-													</div>
-													<div class="mt-5">
-														<div class="main-profile-contact-list float-md-end d-lg-flex">
-															<div class="me-5">
-																<div class="media">
-																	<div class="media-icon bg-primary  me-3 mt-1">
-																		<i class="fa fa-dollar fs-20 text-white"></i>
-																	</div>
-																	<div class="media-body">
-																		<span class="text-muted">Donación</span>
-																		<div class="fw-semibold fs-25">
-																			{{ socio.monto|floatformat:0|intcomma }}
-																		</div>
-																	</div>
-																</div>
-															</div>
-															<div class="me-5 mt-5 mt-md-0">
-																<div class="media">
-																	<div class="media-icon bg-success me-3 mt-1">
-																		<i class="fe fe-database  fs-20 text-white"></i>
-																	</div>
-																	<div class="media-body">
-																		<span class="text-muted">Total</span>
-																		<div class="fw-semibold fs-25">
-																			{{ total_donacion|floatformat:0|intcomma }}
-																		</div>
-																	</div>
-																</div>
-															</div>
-															<div class="me-5 mt-5 mt-md-0">
-																<div class="media">
-																	<div class="media-icon bg-orange me-3 mt-1">
-																		<i class="fe fe-disc fs-20 text-white"></i>
-																	</div>
-																	<div class="media-body">
-																		<span class="text-muted">Estado</span>
-																		<div class="fw-semibold fs-25">
-																			{{ socio.codestado }}
-																		</div>
-																	</div>
-																</div>
-															</div>
-														</div>
-													</div>
-												</div>
-											</div>
-										</div>
-									</div>
-									<div class="border-top">
-										<div class="wideget-user-tab">
-											<div class="tab-menu-heading">
-												<div class="tabs-menu1">
-													<ul class="nav">
-														<li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Descripción</a></li>
-														<li><a href="#tab-61" data-bs-toggle="tab" class="">Seguimiento</a></li>
-														<li><a href="#tab-71" data-bs-toggle="tab" class="">Responsable</a></li>
-														<li><a href="#tab-81" data-bs-toggle="tab" class="">Tareas</a></li>
-
-													</ul>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-                                <div class="tab-content">
-                                    <div class="tab-pane active show" id="tab-51">
-                                        <div id="profile-log-switch">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <div class="media-heading">
-                                                        <!-- <h5><strong>Personal Information</strong></h5> -->
-                                                    </div>
-                                                    <div class="table-responsive ">
-                                                        <table class="table row table-borderless" line-height="1">
-                                                        <!-- <table class="mi-tabla row table-borderless"> -->
-                                                            <tbody class="col-lg-12 col-xl-6 p-0">
-                                                                <tr>
-                                                                    <td><strong>N° Ticket :</strong> {{ ticket.id }}</td>
-                                                                    <td><strong>Fecha ingreso :</strong>{{ ticket.fechacreacion|date:"d/m/Y" }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Tiempo espera total :</strong> {{ diastotalespera }}</td>
-                                                                    <td><strong>Estado :</strong> {{ ticket.estadoticket.nombre }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Fecha estado actual :</strong> {{ ticket.fechahoracambioestado|date:"d/m/Y" }}</td>
-                                                                    <td><strong>Tiempo espera estado actual :</strong> {{ diascambioestado }} </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>DATOS APODERADO</strong></td>
-                                                                    <tr>
-                                                                        <td><strong>Nombre :</strong>{{ ticket.nombre }}</td>
-                                                                        <td><strong>Apellidos :</strong>{{ ticket.apellido }}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Correo :</strong>{{ ticket.correo }}</td>
-                                                                        <td><strong>Fono :</strong>{{ ticket.telefono }}</td>
-                                                                    </tr>
-                                                                    <td><strong>DATOS ALUMNO</strong></td>
-                                                                    <tr>
-                                                                        <td><strong>Nombre :</strong>{{ ticket.nombrealumno }}</td>
-                                                                        <td><strong>Apellidos :</strong>{{ ticket.apellidoalumno }}</td>
-                                                                    </tr>
-                                                                    <tr>
-                                                                        <td><strong>Nivel :</strong>{{ ticket.nivel.nombre }}</td>
-                                                                        <td><strong>Curso :</strong>{{ ticket.curso.nombre }}</td>
-                                                                    </tr>
-
-                                                                </tr>
-                                                            </tbody>
-                                                            <tbody class="col-lg-12 col-xl-6 p-0">
-                                                                <tr>
-                                                                    <td><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Tema contacto :</strong> {{ ticket.subarea.area.nombre }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Sub-tema contacto :</strong> {{ ticket.subarea.nombre }} </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Detalle:</strong></td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><textarea name="" id="" cols="30" rows="4" readonly>{{ ticket.motivo }}</textarea></td></td>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
+<!-- ROW-1 OPEN -->
+<div class="row" id="user-profile">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="wideget-user">
+                    <div class="row">
+                        <div class="col-lg-12 col-md-12 col-xl-6">
+                            <div class="wideget-user-desc d-flex">
+                                <div class="wideget-user-img">
+                                    <!-- <img class="" src="{% static ''%}assets/images/users/8.jpg" alt="img"> -->
+                                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" height="150px">
+                                </div>
+                                <div style="width:auto ;">
+                                    <table>
+                                        <br><br>
+                                        <tr>
+                                            <td>
+                                                <h4>Ticket N° {{ ticket.id }}</h4>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <h4>Tiempo de espera: {{ diastotalespera }}</h4>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <h4>Estado: {{ ticket.estadoticket.nombre }}</h4>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-12 col-md-12 col-xl-6">
+                            <div class="text-xl-right mt-4 mt-xl-0">
+                                <!-- <a href="emailservices" class="btn btn-white">Message</a> -->
+                                <!-- <a href="editprofile" class="btn btn-primary">Editar Datos</a> -->
+                            </div>
+                            <div class="mt-5">
+                                <div class="main-profile-contact-list float-md-end d-lg-flex">
+                                    <div class="me-5">
+                                        <div class="media">
+                                            <div class="media-icon bg-primary  me-3 mt-1">
+                                                <i class="fa fa-dollar fs-20 text-white"></i>
+                                            </div>
+                                            <div class="media-body">
+                                                <span class="text-muted">Donación</span>
+                                                <div class="fw-semibold fs-25">
+                                                    {{ socio.monto|floatformat:0|intcomma }}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="tab-pane" id="tab-61">
-                                        <!-- <ul class="widget-users row  mb-5"> -->
-                                            <div class="row row-sm">
-                                                <div class="col-lg-6">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Detalle seguimiento</h3>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="table-responsive">
-                                                                <div class="col-lg-12">
-                                                                    <div class="card">
-                                                                        <div class="card-header">
-                                                                            <h4 class="card-title fw-semibold ">Actividades</h4>
-                                                                        </div>
-                                                                        <div class="card-body col-lg-12">
-                                                                            <ul class="task-list">
-                                                                                
-                                                                                {% for s in segs %}
-                                                                                    
-                                                                                <li>
-                                                                                    <i class="task-icon bg-secondary"></i>
-                                                                                    <!-- <i class="task-icon bg-primary"></i> -->
-                                                                                    <h6>
-                                                                                        {{s.user}}<span class="text-muted fs-11 ms-2">{{s.fechahora|date:"d/M/Y"}}</span>
-                                                                                    </h6>
-                                                                                    <p class="text-muted fs-14">{{s.comentario}} - <a href="#" class="fw-semibold">{{s.fechahora|time:"H:i"}}</a></p>
-                                                                                </li>
-                                                                                {% endfor %}
-                                                                            </br></br>
-                                                                            </ul>
-                                                                        </div>
-                                                                    </div>
-                                                                </div><!--daily-->
-                                                            </div>
-                                                        </div>
-                                                        
-                                                    </div>
+                                    <div class="me-5 mt-5 mt-md-0">
+                                        <div class="media">
+                                            <div class="media-icon bg-success me-3 mt-1">
+                                                <i class="fe fe-database  fs-20 text-white"></i>
+                                            </div>
+                                            <div class="media-body">
+                                                <span class="text-muted">Total</span>
+                                                <div class="fw-semibold fs-25">
+                                                    {{ total_donacion|floatformat:0|intcomma }}
                                                 </div>
-                                                <div class="col-lg-6">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Agregar Comentario</h3>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <form action="guardacomentario" method="post">
-                                                                {% csrf_token %}
-                                                                <!-- {{form}} -->
-                                                                <textarea class="form-control mb-4" placeholder="Ingrese aquí" rows="6" name="comentario" id="comentario"></textarea>
-                                                                <input type="hidden" readonly="readonly" value="{{user_id}}" name="userid" id="userid">
-                                                                <input type="hidden" readonly="readonly" value="{{ticket.id}}" name="idticket" id="idticket">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="me-5 mt-5 mt-md-0">
+                                        <div class="media">
+                                            <div class="media-icon bg-orange me-3 mt-1">
+                                                <i class="fe fe-disc fs-20 text-white"></i>
+                                            </div>
+                                            <div class="media-body">
+                                                <span class="text-muted">Estado</span>
+                                                <div class="fw-semibold fs-25">
+                                                    {{ socio.codestado }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-top">
+                <div class="wideget-user-tab">
+                    <div class="tab-menu-heading">
+                        <div class="tabs-menu1">
+                            <ul class="nav">
+                                <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Descripción</a>
+                                </li>
+                                <li><a href="#tab-61" data-bs-toggle="tab" class="">Seguimiento</a></li>
+                                <li><a href="#tab-71" data-bs-toggle="tab" class="">Responsable</a></li>
+                                <li><a href="#tab-81" data-bs-toggle="tab" class="">Tareas</a></li>
 
-                                                                <div>
-                                                                    <input type="checkbox" id="cbox1" name="cbox1" value="1" />
-                                                                    <label for="cbox1">Cambiar estado Ticket</label>
-                                                                </div>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-content">
+            <div class="tab-pane active show" id="tab-51">
+                <div id="profile-log-switch">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="media-heading">
+                                <!-- <h5><strong>Personal Information</strong></h5> -->
+                            </div>
+                            <div class="table-responsive ">
+                                <table class="table row table-borderless" line-height="1">
+                                    <!-- <table class="mi-tabla row table-borderless"> -->
+                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                        <tr>
+                                            <td><strong>N° Ticket :</strong> {{ ticket.id }}</td>
+                                            <td><strong>Fecha ingreso :</strong>{{ ticket.fechacreacion|date:"d/m/Y" }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tiempo espera total :</strong> {{ diastotalespera }} días</td>
+                                            <td><strong>Estado :</strong> {{ ticket.estadoticket.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fecha estado actual :</strong> {{ ticket.fechahoracambioestado|date:"d/m/Y" }}</td>
+                                            <td><strong>Tiempo espera estado actual :</strong> {{ diascambioestado }} días
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>DATOS APODERADO</strong></td>
+                                        <tr>
+                                            <td><strong>Nombre :</strong>{{ ticket.nombre }}</td>
+                                            <td><strong>Apellidos :</strong>{{ ticket.apellido }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Correo :</strong>{{ ticket.correo }}</td>
+                                            <td><strong>Fono :</strong>{{ ticket.telefono }}</td>
+                                        </tr>
+                                        <td><strong>DATOS ALUMNO</strong></td>
+                                        <tr>
+                                            <td><strong>Nombre :</strong>{{ ticket.nombrealumno }}</td>
+                                            <td><strong>Apellidos :</strong>{{ ticket.apellidoalumno }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Nivel :</strong>{{ ticket.nivel.nombre }}</td>
+                                            <td><strong>Curso :</strong>{{ ticket.curso.nombre }}</td>
+                                        </tr>
 
-                                                                <div id="estadoDropdown" style="display:none;">
-                                                                    <select name="estadoTicket" id="estadoTicket">
-                                                                        {% for estado in estados %}
-                                                                        <option value="{{ estado.id }}">{{ estado.nombre }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
-                                                                </div>
+                                        </tr>
+                                    </tbody>
+                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                        <tr>
+                                            <td><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tema contacto :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Sub-tema contacto :</strong> {{ ticket.subarea.nombre }} </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Detalle:</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td><textarea name="" id="" cols="30" rows="4"
+                                                    readonly>{{ ticket.motivo }}</textarea></td>
+                                            </td>
+                                        </tr>
+                                         <tr>
+                                            <td>
+                                                {% if ticket.estadoticket_id == 1 %}
+                                                    <form action="enviacorreocolegio" method="post">
+                                                        {% csrf_token %}
+                                                                                                
+                                                        <input type="hidden" readonly="readonly" value="{{user_id}}" name="userid"
+                                                            id="userid">
+                                                        <input type="hidden" readonly="readonly" value="{{ticket.id}}" name="idticket"
+                                                            id="idticket">
+                    
+                                                        <button type="submit" class="btn btn-primary">Envía Caso al Colegio</button>
+                                                    </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab-61">
+                <!-- <ul class="widget-users row  mb-5"> -->
+                <div class="row row-sm">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Detalle seguimiento</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="col-lg-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h4 class="card-title fw-semibold ">Actividades</h4>
+                                            </div>
+                                            <div class="card-body col-lg-12">
+                                                <ul class="task-list">
 
-                                                                <input type="checkbox" id="cbox2" name="cbox2" value="2" />
-                                                                <label for="cbox2">Crear Tarea</label>
+                                                    {% for s in segs %}
 
-                                                                <div id="tareaDropdown" style="display:none;">
-                                                                    <select name="tarea" id="tarea">
-                                                                        {% for estado in taestados %}
-                                                                        <option value="{{ estado.id }}">{{ estado.nombre }}</option>
-                                                                        {% endfor %}
-                                                                    </select>
-                                                                </div>
+                                                    <li>
+                                                        <i class="task-icon bg-secondary"></i>
+                                                        <!-- <i class="task-icon bg-primary"></i> -->
+                                                        <h6>
+                                                            {{s.user}}<span
+                                                                class="text-muted fs-11 ms-2">{{s.fechahora|date:"d/M/Y"}}</span>
+                                                        </h6>
+                                                        <p class="text-muted fs-14">{{s.comentario}} - <a href="#"
+                                                                class="fw-semibold">{{s.fechahora|time:"H:i"}}</a></p>
+                                                    </li>
+                                                    {% endfor %}
+                                                    </br></br>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--daily-->
+                                </div>
+                            </div>
 
-                                                                
-                                                                <!-- <input type="checkbox" id="cbox3" name="cbox3" value="3" />
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Agregar Comentario</h3>
+                            </div>
+                            <div class="card-body">
+                                <form action="guardacomentario" method="post">
+                                    {% csrf_token %}
+                                    <!-- {{form}} -->
+                                    <textarea class="form-control mb-4" placeholder="Ingrese aquí" rows="6"
+                                        name="comentario" id="comentario"></textarea>
+                                    <input type="hidden" readonly="readonly" value="{{user_id}}" name="userid"
+                                        id="userid">
+                                    <input type="hidden" readonly="readonly" value="{{ticket.id}}" name="idticket"
+                                        id="idticket">
+
+                                    <div>
+                                        <input type="checkbox" id="cbox1" name="cbox1" value="1" />
+                                        <label for="cbox1">Cambiar estado Ticket</label>
+                                    </div>
+
+                                    <div id="estadoDropdown" style="display:none;">
+                                        <select name="estadoTicket" id="estadoTicket">
+                                            {% for estado in estados %}
+                                            <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <input type="checkbox" id="cbox2" name="cbox2" value="2" />
+                                    <label for="cbox2">Crear Tarea</label>
+
+                                    <div id="tareaDropdown" style="display:none;">
+                                        <select name="tarea" id="tarea">
+                                            {% for estado in taestados %}
+                                            <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+
+                                    <!-- <input type="checkbox" id="cbox3" name="cbox3" value="3" />
                                                                 <label for="cbox3">Activar Correo automático seguimiento</label> -->
 
-                                                                <button type="submit" class="btn btn-primary">Guardar</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                    <button type="submit" class="btn btn-primary">Guardar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- </ul> -->
+            </div>
+            <!--end tab61-->
+
+            <div class="tab-pane" id="tab-71">
+                <ul class="widget-users row  mb-5">
+                    <div class="row row-sm">
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Responsable</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive ">
+                                        <table class="table row table-borderless" line-height="1">
+                                            <!-- <table class="mi-tabla row table-borderless"> -->
+                                            <tbody class="col-lg-12 col-xl-6 p-0">
+                                                <tr>
+                                                    <td><strong>Area Responsable :</strong> {{
+                                                        ticket.subarea.area.nombre }}</td>
+                                                    <td><strong>Tema : </strong>{{ ticket.subarea.nombre }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>RESPONSABLE</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong>{{ responsablearea.nombre }}</td>
+                                                    <td><strong>Correo : </strong>{{ responsablearea.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Teléfono : </strong>{{ responsablearea.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>COORDINADOR CICLO</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong> {{ responsableciclo.nombre }}</td>
+                                                    <td><strong>Correo : </strong> {{ responsableciclo.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Teléfono : </strong> {{ responsableciclo.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+
+                                                <tr>
+                                                    <td><strong>RESPONSABLE SUPERIOR</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre :</strong>{{ responsablesuperrior.nombre }}</td>
+                                                    <td><strong>Correo :</strong>{{ responsablesuperrior.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Teléfono :</strong>{{ responsablesuperrior.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+                                            </tbody>
+                                            <tbody class="col-lg-12 col-xl-6 p-0">
+
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ul>
+            </div>
+            <!--end tab71-->
+            <div class="tab-pane" id="tab-81">
+                <!-- <ul class="widget-users row  mb-5"> -->
+                <div class="row row-sm">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Tareas</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="col-lg-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h4 class="card-title fw-semibold ">En desarrollo</h4>
                                             </div>
-                                        <!-- </ul> -->
-                                    </div> <!--end tab61-->
+                                            <div class="card-body col-lg-12">
+                                                <ul class="task-list">
 
-                                    <div class="tab-pane" id="tab-71">
-                                        <ul class="widget-users row  mb-5">
-                                            <div class="row row-sm">
-                                                <div class="col-lg-12">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Responsable</h3>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="table-responsive ">
-                                                                <table class="table row table-borderless" line-height="1">
-                                                                <!-- <table class="mi-tabla row table-borderless"> -->
-                                                                    <tbody class="col-lg-12 col-xl-6 p-0">
-                                                                        <tr>
-                                                                            <td><strong>Area Responsable :</strong> {{ ticket.subarea.area.nombre }}</td>
-                                                                            <td><strong>Tema : </strong>{{ ticket.subarea.nombre }}</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>RESPONSABLE</strong></td>
-                                                                            <tr>
-                                                                                <td><strong>Nombre : </strong>{{ responsablearea.nombre }}</td>
-                                                                                <td><strong>Correo : </strong>{{ responsablearea.correo }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td>
-                                                                                    <strong>Teléfono : </strong>{{ responsablearea.telefono }}
-                                                                                </td>
-                                                                            </tr>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>COORDINADOR CICLO</strong></td>
-                                                                            <tr>
-                                                                                <td><strong>Nombre : </strong> {{ responsableciclo.nombre }}</td>
-                                                                                <td><strong>Correo : </strong> {{ responsableciclo.correo }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Teléfono : </strong> {{ responsableciclo.telefono }}</td>
-                                                                            </tr>
-                                                                        </tr>
-                                                                       
-                                                                        <tr>
-                                                                            <td><strong>RESPONSABLE SUPERIOR</strong></td>
-                                                                            <tr>
-                                                                                <td><strong>Nombre :</strong>{{ responsablesuperrior.nombre }}</td>
-                                                                                <td><strong>Correo :</strong>{{ responsablesuperrior.correo }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Teléfono :</strong>{{ responsablesuperrior.telefono }}</td>
-                                                                            </tr>
-                                                                        </tr>
-                                                                    </tbody>
-                                                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                                    {% for t in tareas %}
 
-
-                                                                    </tbody>
-                                                                </table>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                    <li>
+                                                        <i class="task-icon bg-secondary"></i>
+                                                        <!-- <i class="task-icon bg-primary"></i> -->
+                                                        <h6>
+                                                            {{s.user}}<span
+                                                                class="text-muted fs-11 ms-2">{{t.fecha|date:"d/M/Y"}}</span>
+                                                        </h6>
+                                                        <p class="text-muted fs-14">{{t.comentario}} - <a href="#"
+                                                                class="fw-semibold">{{t.fecha|time:"H:i"}}</a></p>
+                                                    </li>
+                                                    {% endfor %}
+                                                    </br></br>
+                                                </ul>
                                             </div>
-                                        </ul>
-                                    </div> <!--end tab71-->
-                                    <div class="tab-pane" id="tab-81">
-                                        <!-- <ul class="widget-users row  mb-5"> -->
-                                            <div class="row row-sm">
-                                                <div class="col-lg-6">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Tareas</h3>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="table-responsive">
-                                                                <div class="col-lg-12">
-                                                                    <div class="card">
-                                                                        <div class="card-header">
-                                                                            <h4 class="card-title fw-semibold ">Actividades</h4>
-                                                                        </div>
-                                                                        <div class="card-body col-lg-12">
-                                                                            <ul class="task-list">
-                                                                                
-                                                                                {% for s in segs %}
-                                                                                    
-                                                                                <li>
-                                                                                    <i class="task-icon bg-secondary"></i>
-                                                                                    <!-- <i class="task-icon bg-primary"></i> -->
-                                                                                    <h6>
-                                                                                        {{s.user}}<span class="text-muted fs-11 ms-2">{{s.fecha|date:"d/M/Y"}}</span>
-                                                                                    </h6>
-                                                                                    <p class="text-muted fs-14">{{s.comentario}} - <a href="#" class="fw-semibold">{{s.fecha|time:"H:i"}}</a></p>
-                                                                                </li>
-                                                                                {% endfor %}
-                                                                            </br></br>
-                                                                            </ul>
-                                                                        </div>
-                                                                    </div>
-                                                                </div><!--daily-->
-                                                            </div>
-                                                        </div>
-                                                        
-                                                    </div>
-                                                </div>
-                                                <div class="col-lg-6">
-                                                    <div class="card">
-                                                        <div class="card-header">
-                                                            <h3 class="card-title">Ingreso Comentarios</h3>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <form action="guardacomentario" method="post">
-                                                                {% csrf_token %}
-                                                                <!-- {{form}} -->
-                                                                <textarea class="form-control mb-4" placeholder="Ingrese aquí" rows="6" name="comentario" id="comentario"></textarea>
-                                                                <input type="hidden" readonly="readonly" value="{{user_id}}" name="userid" id="userid">
-                                                                <input type="hidden" readonly="readonly" value="{{socio.id}}" name="idsocio" id="idsocio">
+                                        </div>
+                                    </div>
+                                    <!--daily-->
+                                </div>
+                            </div>
 
-                                                                {% if socio.codestado_id == 2 %}
-                                                                    <input type="checkbox" id="cbox1" name="cbox1" value="1" />
-                                                                    <label for="cbox1">Marque si desea Activar el Socio</label>
-                                                                {% else %}
-                                                                    <input type="checkbox" id="cbox2" name="cbox2" value="2" />
-                                                                    <label for="cbox2">Marque si desea Inactivar el Socio</label>
-                                                                {% endif %}
-                                                                <button type="submit" class="btn btn-primary">Guardar</button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        <!-- </ul> -->
-                                    </div> <!--end tab81-->
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">..........</h3>
+                            </div>
+                            <div class="card-body">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- </ul> -->
+            </div>
+            <!--end tab81-->
 
 
 
-                            </div><!-- COL-END -->
-                        </div><!--row-->
-						
-						
-                        
-                        <script>
-                            function goBack() {
-                                window.history.back();
-                                }
-                        </script>
-						{% endblock body %}
-					
-{% block scripts %}
-        
-		
-        <script>
-            document.getElementById('cbox1').addEventListener('change', function() {
-                var display = this.checked ? 'block' : 'none';
-                document.getElementById('estadoDropdown').style.display = display;
-            });
-            
-        </script>
+        </div><!-- COL-END -->
+    </div>
+    <!--row-->
 
 
-{% endblock scripts %}
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+    {% endblock body %}
+
+    {% block scripts %}
+
+
+    <script>
+        document.getElementById('cbox1').addEventListener('change', function () {
+            var display = this.checked ? 'block' : 'none';
+            document.getElementById('estadoDropdown').style.display = display;
+        });
+
+    </script>
+
+
+    {% endblock scripts %}

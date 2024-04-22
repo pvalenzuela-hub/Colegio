@@ -133,10 +133,22 @@ def envio_correo_colegio(idticket):
         print(f"Error: {e}")
         return False
     
+def envia_correo_colegio(request):
+    ticket = Ticket.objects.get(id=request.POST.get('idticket'))
+    print (ticket)
+    
+    envio_correo_colegio(ticket.id)
+    
+    return redirect(f'/ticket/{ticket.id}')
+    
+
 def pruebacorreo(request):
     # botón desde Descripción para envío de correo
+    ticket = Ticket.objects.get(id=request.POST.get('idticket'))
+    print (ticket)
+    
+    envio_correo_colegio(ticket.id)
 
-    envio_correo_colegio(1)
     return render(request,'exito.html')
 
 def formulariorespuesta_colegio(request,ticket_id):
@@ -167,6 +179,7 @@ def formulariorespuesta_colegio(request,ticket_id):
 
     contexto = {
         'ticket_id': ticket_id,
+        'ticket': ticket,
         'destinatarios': destinatarios,
     }
     return render(request, template_name, context=contexto)
