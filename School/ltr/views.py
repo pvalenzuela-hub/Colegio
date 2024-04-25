@@ -11,14 +11,13 @@ from django.template.loader import get_template
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.http import JsonResponse
-from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaCiclo, ResponsableSuperior, CoordinadorCiclo, Personas
+from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe
 from django.views.generic import ListView, DetailView
 from django.core.serializers import serialize
-from datetime import date, timedelta,datetime
+from datetime import date, timedelta, datetime
 from django.contrib.auth.models import User
 
 #################################################################################################
-
 # Create your views here.
 #########################
 
@@ -62,6 +61,16 @@ def envia_correo(request):
     # Cerrar la conexión SMTP
     smtp.quit()
 
+def obtener_destinatarios(responsables):
+    persona_ids = set(responsable.persona.id for responsable in responsables)
+    return Personas.objects.filter(id__in=persona_ids)
+
+def obtener_destinatarios_correos(responsables):
+    # Recolecta IDs de Persona de los responsables
+    persona_ids = {responsable.persona.id for responsable in responsables}
+    # Retorna una lista de direcciones de correo, asegurando que no hay duplicados
+    return Personas.objects.filter(id__in=persona_ids).values_list('correo', flat=True).distinct()    
+
 @transaction.atomic
 def envio_correo_colegio(idticket):
     try:
@@ -70,35 +79,55 @@ def envio_correo_colegio(idticket):
         nuevo_estado = get_object_or_404(Estadoticket, id=2)
         user = get_object_or_404(User,username='admin')
         area = ticket.subarea.area.nombre
-        subarea = ticket.subarea.nombre
+        subarea = get_object_or_404(Subarea,id=ticket.subarea.id)
+        asignatura = get_object_or_404(Asignatura,id = ticket.aisgnatura.id)
+        
         nombreapoderado = " ".join((ticket.nombre + " " + ticket.apellido).split())
         nombrealumno = " ".join((ticket.nombrealumno + " " + ticket.apellidoalumno).split())
 
         # Define Destinatario del Correo
-        responsablessubareaciclo = ResponsableSubareaCiclo.objects.filter(subarea=ticket.subarea, ciclo=nivel.ciclo)
+        destinatario_correo=""
+        
+        responsableprofesor = ProfesorResponsable.objects.filter(asignatura=ticket.aisgnatura,nivel=ticket.nivel)
+        responsablessubareanivel = ResponsableSubareaNivel.objects.filter(subarea=ticket.subarea, nivel=ticket.nivel)
         coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
         responsablesuperior = ResponsableSuperior.objects.filter(subarea=ticket.subarea)
-    
-        # Lista para guardar los objetos de destinatarios de correos
-        to_adr = []
-        for responsable in responsablessubareaciclo:
-            persona = get_object_or_404(Personas, id=responsable.persona.id)
-            destinatario_correo = persona.nombre
-            cargo = persona.cargo
-            to_adr.append(persona.correo)
 
-        for responsable in coordinadorciclo:
-            persona = get_object_or_404(Personas, id=responsable.persona.id)
-            to_adr.append(persona.correo)
+        if subarea.profejefe:
+            profesorjefe = ProfesorJefe.objects.filter(nivel=ticket.nivel, curso=ticket.curso)
+            # Unir todos los responsables en una lista
+            if asignatura.id > 1:
+                todos_responsables = list(responsableprofesor) + list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
+            else:
+                todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
+        else:
+            # Unir todos los responsables en una lista
+            if asignatura.id > 1:
+                todos_responsables = list(responsableprofesor) + list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
+            else:
+                todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
 
-        for responsable in responsablesuperior:
-            persona = get_object_or_404(Personas,id=responsable.persona.id)
-            to_adr.append(persona.correo)
+        # Obtener todos los destinatarios sin duplicados
+        to_adr = obtener_destinatarios_correos(todos_responsables)
 
+        if asignatura.id > 1:
+            # Primer Destinatario es el Profesor
+            for responsable in responsableprofesor:
+                persona = get_object_or_404(Personas, id=responsable.persona.id)
+                destinatario_correo = persona.nombre
+                cargo = persona.cargo
+
+        # Si Destinatrario correo no ha sido asignado antes
+        if destinatario_correo == "":
+            for responsable in responsablessubareanivel:
+                persona = get_object_or_404(Personas, id=responsable.persona.id)
+                destinatario_correo = persona.nombre
+                cargo = persona.cargo
 
         print (to_adr)
 
-        fec = datetime.now()
+        fec = datetime.today()
+        ticket.fechaprimerenvio = fec
         ticket.estadoticket = nuevo_estado
         ticket.fechahoracambioestado = fec
         ticket.save()
@@ -136,9 +165,7 @@ def envio_correo_colegio(idticket):
 def envia_correo_colegio(request):
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
     print (ticket)
-    
     envio_correo_colegio(ticket.id)
-    
     return redirect(f'/ticket/{ticket.id}')
     
 
@@ -146,10 +173,9 @@ def pruebacorreo(request):
     # botón desde Descripción para envío de correo
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
     print (ticket)
-    
     envio_correo_colegio(ticket.id)
-
     return render(request,'exito.html')
+
 
 def formulariorespuesta_colegio(request,ticket_id):
     template_name = "formulario_respuesta_colegio.html"
@@ -157,25 +183,56 @@ def formulariorespuesta_colegio(request,ticket_id):
     # recuperar la lista de destinatarios según subarea
     ticket = get_object_or_404(Ticket, id=ticket_id)
     nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
+    subarea = get_object_or_404(Subarea,id=ticket.subarea.id)
+    asignatura = get_object_or_404(Asignatura, id=ticket.aisgnatura.id)
 
-    # Obtener responsables según subárea y ciclo
-    responsablessubareaciclo = ResponsableSubareaCiclo.objects.filter(subarea=ticket.subarea, ciclo=nivel.ciclo)
+    responsableprofesor = ProfesorResponsable.objects.filter(asignatura=ticket.aisgnatura,nivel=ticket.nivel)
+    responsablessubareanivel = ResponsableSubareaNivel.objects.filter(subarea=ticket.subarea, nivel=ticket.nivel)
     coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
     responsablesuperior = ResponsableSuperior.objects.filter(subarea=ticket.subarea)
     
+    if subarea.profejefe:
+        profesorjefe = ProfesorJefe.objects.filter(nivel=ticket.nivel, curso=ticket.curso)
+        # Unir todos los responsables en una lista
+        if asignatura.id > 1:
+            todos_responsables = list(responsableprofesor) + list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
+        else:
+            todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
+    else:
+        # Unir todos los responsables en una lista
+        if asignatura.id > 1:
+            todos_responsables = list(responsableprofesor) + list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
+        else:
+            todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
+
+
+    # Obtener todos los destinatarios sin duplicados
+    destinatarios = obtener_destinatarios(todos_responsables)
+
     # Lista para guardar los objetos de destinatarios
-    destinatarios = []
-    for responsable in responsablessubareaciclo:
-        persona = get_object_or_404(Personas, id=responsable.persona.id)
-        destinatarios.append(persona)
+   
+    # for responsable in responsablessubareanivel:
+    #     persona = get_object_or_404(Personas, id=responsable.persona.id)
+    #     destinatarios.append(persona)
 
-    for responsable in coordinadorciclo:
-        persona = get_object_or_404(Personas, id=responsable.persona.id)
-        destinatarios.append(persona)
+    # for responsable in coordinadorciclo:
+    #     persona = get_object_or_404(Personas, id=responsable.persona.id)
+    #     destinatarios.append(persona)
 
-    for responsable in responsablesuperior:
-        persona = get_object_or_404(Personas,id=responsable.persona.id)
-        destinatarios.append(persona)
+    # for responsable in responsablesuperior:
+    #     persona = get_object_or_404(Personas,id=responsable.persona.id)
+    #     destinatarios.append(persona)
+    # destinatarios = []
+    # destinatarios_dict = {}
+    # for grupo in [responsablessubareanivel, coordinadorciclo, responsablesuperior]:
+    #     for responsable in grupo:
+    #         persona_id = responsable.persona.id
+    #         if persona_id not in destinatarios_dict:
+    #             persona = get_object_or_404(Personas, id=persona_id)
+    #             destinatarios_dict[persona_id] = persona
+
+    # # Ahora convertir el diccionario de vuelta en una lista
+    # destinatarios = list(destinatarios_dict.values())
 
     contexto = {
         'ticket_id': ticket_id,
@@ -185,19 +242,33 @@ def formulariorespuesta_colegio(request,ticket_id):
     return render(request, template_name, context=contexto)
     
 def respuesta_colegio(request):
+    # Aquí viene la Respuesta del Colegio
+    #####################################
     if request.method == 'POST':
         ticket = Ticket.objects.get(id=request.POST.get('idticket'))
         marca_espera = 'cbox1' in request.POST
+
+        fechahoracambioestado = datetime.today()
         if marca_espera:
             # si Colegio marcó opción, se debe cambiar a Conversación Colegio (3)
             opcion = 3
             estadoticket = Estadoticket.objects.get(id=opcion)
+            if ticket.estadoticket_id == 2:
+                # guardar fecha y hora de primera respuesta del colegio (estado=2)
+                ticket.fechaprimerarespuesta = fechahoracambioestado
+            
+            ticket.fechahoracambioestado = fechahoracambioestado
             ticket.estadoticket_id = estadoticket.id
             ticket.save()
         else:
             # si Colegio NO marcó opción, se debe cambiar a Conversación Apoderado (4)
             opcion = 4
             estadoticket = Estadoticket.objects.get(id=opcion)
+            if ticket.estadoticket_id == 2:
+                # guardar fecha y hora de primera respuesta del colegio (estado=2)
+                ticket.fechaprimerarespuesta = fechahoracambioestado
+
+            ticket.fechahoracambioestado = fechahoracambioestado
             ticket.estadoticket_id = estadoticket.id
             ticket.save()
 
@@ -213,9 +284,8 @@ def respuesta_colegio(request):
         return redirect('error_url')
 
 def registroticket(request):
-    
-    if request.method == 'POST':
-        print (request.POST['nombre'])
+    # Registro Ticket Colegio Abadía Id=1
+  
 
     
     ' Colegio 1'
@@ -245,33 +315,22 @@ def cargar_subareas(request):
     return JsonResponse(list_subareas, safe=False)
     
 def creaticket(request):
-    nombre = request.POST['nombre']
-    apellidos = request.POST['apellidos']
-    email = request.POST['email']
-    fono = request.POST['fono']
-    nombrealumno = request.POST['nombrealumno']
-    apellidosalumno = request.POST['apellidosalumno']
-    nivel = request.POST['nivel']
-    curso = request.POST['curso']
-    tipocontacto = request.POST['tipocontacto']
-    subarea = request.POST['subarea']
-    motivo = request.POST['motivo']
-    fechahoracambioestado = datetime.now()
+    if request.method == 'POST':
+        estadoticket = get_object_or_404(Estadoticket,id=1)
+        nombre = request.POST['nombre']
+        apellidos = request.POST['apellidos']
+        email = request.POST['email']
+        fono = request.POST['fono']
+        nombrealumno = request.POST['nombrealumno']
+        apellidosalumno = request.POST['apellidosalumno']
+        nivel = request.POST['nivel']
+        curso = request.POST['curso']
+        tipocontacto = request.POST['tipocontacto']
+        subarea = request.POST['subarea']
+        motivo = request.POST['motivo']
+        fechahoracambioestado = datetime.now()
 
-    Ticket.objects.create(nombre=nombre,apellido=apellidos,correo=email,telefono=fono,tipocontacto_id=tipocontacto,subarea_id=subarea,motivo=motivo,estadoticket_id=1,fechahoracambioestado=fechahoracambioestado,nombrealumno=nombrealumno,apellidoalumno=apellidosalumno,nivel_id=nivel,curso_id=curso)
-
-    # print(nombre)
-    # print(apellidos)
-    # print(email)
-    # print(fono)
-    # print(nombrealumno)
-    # print(apellidosalumno)
-    # print(nivel)
-    # print(curso)
-    # print(tipocontacto)
-    # print(area)
-    # print(subarea)
-    # print(motivo)
+        Ticket.objects.create(nombre=nombre,apellido=apellidos,correo=email,telefono=fono,tipocontacto_id=tipocontacto,subarea_id=subarea,motivo=motivo,estadoticket=estadoticket,fechahoracambioestado=fechahoracambioestado,nombrealumno=nombrealumno,apellidoalumno=apellidosalumno,nivel_id=nivel,curso_id=curso)
     
     return redirect('/registroticket')
     
@@ -312,12 +371,12 @@ class VisorTicket(DetailView):
         dias_de_cambio_estado = str(tcambioestado.days)  # Días de diferencia
 
         nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
-        responsablessubareaciclo = ResponsableSubareaCiclo.objects.filter(subarea=ticket.subarea, ciclo=nivel.ciclo)
+        responsablessubareanivel = ResponsableSubareaNivel.objects.filter(subarea=ticket.subarea, nivel=ticket.nivel)
         coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
         responsablesuperior = ResponsableSuperior.objects.filter(subarea=ticket.subarea)
 
 
-        for responsable in responsablessubareaciclo:
+        for responsable in responsablessubareanivel:
             personaresponsable = get_object_or_404(Personas, id=responsable.persona.id)
             
 
@@ -368,8 +427,10 @@ def guardacomentario(request):
         estado_id = request.POST.get('estadoTicket', None)
         if estado_id:
             # Aquí puedes hacer algo con el estado_id, por ejemplo, actualizar el estado del ticket
+            fechahoracambioestado = date.today()
             ticket = Ticket.objects.get(id=request.POST.get('idticket'))
             ticket.estadoticket_id = estado_id
+            ticket.fechahoracambioestado = fechahoracambioestado
             ticket.save()
 
             nuevo_estado = ticket.estadoticket.nombre

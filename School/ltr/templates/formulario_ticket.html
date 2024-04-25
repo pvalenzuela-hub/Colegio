@@ -243,6 +243,7 @@
         
                                         <label class="form-label" for="nivel">Areas</label><span class="required-input">*</span>
                                         <select class="form-control" id="area" name="area" required="">
+                                            <option value="" selected disabled>---------</option>
                                             {% for area in areas %}
                                             <option value="{{ area.id }}">{{ area.nombre }}</option>
                                             {% endfor %}

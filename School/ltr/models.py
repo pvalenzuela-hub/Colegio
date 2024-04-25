@@ -44,6 +44,7 @@ class Subarea(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     area = models.ForeignKey(Area,on_delete=models.CASCADE)
+    profejefe = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.area)+' - '+self.nombre
@@ -57,14 +58,16 @@ class Personas(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     correo = models.EmailField()
-    telefono = models.CharField(max_length=80)
+    telefono = models.CharField(max_length=80, default="", blank=True)
     cargo = models.CharField(max_length=80,default="")
+    esprofe = models.BooleanField(default=False)
+    colegio = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING,default=1)
 
     def __str__(self):
-        return self.nombre
+        return self.nombre+' - '+str(self.esprofe)
 
     class Meta:
-        ordering = ["nombre"]
+        ordering = ["esprofe","nombre"]
         db_table = 'Personas'
 
 class Ciclos(models.Model):
@@ -79,23 +82,36 @@ class Ciclos(models.Model):
         ordering = ["id"]
         db_table = 'Ciclos'
 
-class ResponsableSubareaCiclo(models.Model):
-    id = models.AutoField(primary_key=True)
-    persona = models.ForeignKey(Personas,on_delete=models.CASCADE)
-    subarea = models.ForeignKey(Subarea,on_delete=models.DO_NOTHING)
-    ciclo = models.ForeignKey(Ciclos,on_delete=models.DO_NOTHING)
+class Nivel(models.Model):
+    id =models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=80)
+    ciclo = models.ForeignKey(Ciclos,on_delete=models.DO_NOTHING,default=1)
+    orden = models.IntegerField()
 
     def __str__(self):
-        return 'CICLO : '+str(self.ciclo)+' - '+str(self.persona)+' AREA : '+str(self.subarea)
+        return self.nombre+' - '+str(self.ciclo)
+
+    class Meta:
+        ordering = ["ciclo","orden"]
+        db_table = 'Nivel'        
+
+class ResponsableSubareaNivel(models.Model):
+    id = models.AutoField(primary_key=True)
+    persona = models.ForeignKey(Personas,on_delete=models.CASCADE)
+    subarea = models.ForeignKey(Subarea,on_delete=models.CASCADE)
+    nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return 'SubArea:'+str(self.subarea)+ ' : '+ 'Nivel : '+str(self.nivel)+' - '+str(self.persona)
     
     class Meta:
         ordering = ['id']
-        db_table = 'ResponsableSubareasCiclos'
+        db_table = 'ResponsableSubareasNivel'
 
 class ResponsableSuperior(models.Model):
     id = models.AutoField(primary_key=True)
     persona = models.ForeignKey(Personas,on_delete=models.CASCADE)
-    subarea = models.ForeignKey(Subarea,on_delete=models.DO_NOTHING)
+    subarea = models.ForeignKey(Subarea,on_delete=models.CASCADE)
 
     def __str__(self):
         return str(self.subarea)+' - '+str(self.persona)
@@ -107,7 +123,7 @@ class ResponsableSuperior(models.Model):
 class CoordinadorCiclo(models.Model):
     id = models.AutoField(primary_key=True)
     persona = models.ForeignKey(Personas,on_delete=models.CASCADE)
-    ciclo = models.ForeignKey(Ciclos,on_delete=models.DO_NOTHING)
+    ciclo = models.ForeignKey(Ciclos,on_delete=models.CASCADE)
 
     def __str__(self):
         return 'CICLO : '+str(self.ciclo)+' - '+str(self.persona)
@@ -129,19 +145,6 @@ class Tipocontacto(models.Model):
         ordering = ["nombre"]
         db_table = 'TipoContacto'
 
-class Nivel(models.Model):
-    id =models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=80)
-    ciclo = models.ForeignKey(Ciclos,on_delete=models.DO_NOTHING,default=1)
-    orden = models.IntegerField()
-
-    def __str__(self):
-        return self.nombre+' - '+str(self.ciclo)
-
-    class Meta:
-        ordering = ["ciclo","orden"]
-        db_table = 'Nivel'
-
 class Curso(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=50)
@@ -154,6 +157,45 @@ class Curso(models.Model):
     class Meta:
         ordering = ["colegio","orden"]
         db_table = 'Curso'
+
+class Asignatura(models.Model):
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=50)
+    colegio = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING)
+    orden = models.IntegerField()
+
+    def __str__(self):
+        return self.nombre+' : '+str(self.colegio)
+
+    class Meta:
+        ordering = ["colegio","orden"]
+        db_table = 'Asignaturas'
+
+class ProfesorResponsable(models.Model):
+    id = models.AutoField(primary_key=True)
+    persona = models.ForeignKey(Personas, on_delete=models.CASCADE)
+    asignatura = models.ForeignKey(Asignatura, on_delete=models.CASCADE)
+    nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.asignatura)
+
+    class Meta:
+        ordering = ['id']
+        db_table = 'ProfesorResponsable'
+
+class ProfesorJefe(models.Model):
+    id = models.AutoField(primary_key=True)
+    persona = models.ForeignKey(Personas, on_delete=models.CASCADE)
+    nivel = models.ForeignKey(Nivel, on_delete=models.CASCADE)
+    curso = models.ForeignKey(Curso, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.persona)+' - '+ str(self.nivel)+' - '+str(self.curso)
+
+    class Meta:
+        ordering = ['id']
+        db_table = 'ProfesorJefe'
 
 class Ticket(models.Model):
     id = models.AutoField(primary_key=True)
@@ -172,6 +214,9 @@ class Ticket(models.Model):
     apellidoalumno = models.CharField(max_length=80,default="")
     nivel = models.ForeignKey(Nivel,on_delete=models.DO_NOTHING,default=1)
     curso = models.ForeignKey(Curso,on_delete=models.DO_NOTHING,default=1)
+    aisgnatura = models.ForeignKey(Asignatura, on_delete=models.DO_NOTHING,default=1)
+    fechaprimerenvio = models.DateTimeField(null=True,blank=True)
+    fechaprimerarespuesta = models.DateTimeField(null=True,blank=True)
 
     class Meta:
         ordering = ['id']
