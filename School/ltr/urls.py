@@ -166,7 +166,7 @@ urlpatterns = [
 
     path("icons10", views.icons10, name='icons10'),
 
-    path("index", views.Index, name='index'),
+    #path("index", views.Index, name='index'),
 
     path("invoice", views.invoice, name='invoice'),
 

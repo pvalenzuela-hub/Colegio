@@ -14,7 +14,7 @@
 		.container {
 			padding: 0%;
 			width: 100%;
-			max-width: 1000px;
+			max-width: 800px;
 			margin: auto;
 			background-color: white;
 			border: 0px;
@@ -24,10 +24,6 @@
 		.fondo {
 			background-color: #f5f5f5;
 			height: auto;
-		}
-
-		.content {
-			padding: 10px;
 		}
 
 		.textos {
@@ -69,6 +65,16 @@
 			margin-left: 40px;
 			background-color: white;
 		}
+
+		.logo {
+			height: 135px;
+		}
+
+		.firma {
+			font-size: 14px;
+			margin-left: 15%;
+			margin-top: 0%;
+		}
 	</style>
 </head>
 
@@ -76,17 +82,24 @@
 	<div class="row fondo">
 		<div class="container">
 			<div class="content">
-				<div class="col-lg-8 col-xl-9 col-md-12 col-sm-12">
-					<div class="titulo">
-						<h3>Respuesta al Apoderado</h3>
-					</div>
+
+				<div style="text-align: center;">
+					<img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg"
+						alt="logo" class="logo">
 				</div>
+				<div class="titulo">
+					<h4 style="color:#21529b ;text-align: left;">
+						<striong>Formulario Respuesta al Apoderado</striong>
+					</h4>
+				</div>
+
 				<div class="content">
 					<div class="row textos">
-						<div class="col-10" id="message-1">
+						<div class="col-12" id="message-1">
 							<form id="respuesta" action="{% url 'respuesta_colegio' %}" method="post">
 								{% csrf_token %}
 								<input type="hidden" name="idticket" id="idticket" value="{{ ticket_id }}">
+								<input type="hidden" name="subject" id="subject" value="{{ subject }}">
 								<table>
 									<tr>
 										<td>
@@ -94,11 +107,14 @@
 											<span class="required-input"></span>
 										</td>
 										<td>
-											<select class="form-control" id="emisor" name="emisor" required=""
+											<select class="form-control" id="emisor" name="emisor" required
 												style="width:560px;">
+												<option value="">Seleccione un emisor...</option>
 												{% for dest in destinatarios %}
-												<option value="{{ dest.id }}">{{ dest.nombre }}</option>
+												<option value="{{ dest.id }}" data-nombre="{{ dest.nombre }}"
+													data-cargo="{{ dest.cargo }}" data-correo="{{ dest.correo }}">{{ dest.nombre }}</option>
 												{% endfor %}
+											</select>
 										</td>
 									</tr>
 									<tr>
@@ -115,9 +131,7 @@
 											<label class="form-label">Asunto</label>
 										</td>
 										<td class="fila">
-											<div class="col-sm-9 col-xl-10">
-												<input type="text" class="form-control" value="" required="True">
-											</div>
+											<span>{{ subject }}</span>
 										</td>
 									</tr>
 									<br>
@@ -131,18 +145,41 @@
 											</div>
 										</td>
 									</tr>
-
 								</table>
-
+								
+								<table>
+									<tr>
+										<td>
+											<label class="form-label">Firma</label>
+										</td>
+										<td class="firma">
+											<div style="text-align: center;">
+												<img class="" src="{% static ''%}assets/images/logofirma.png" alt="img" style="height:150px" >
+											</div>
+										</td>
+										<td class="firma">
+											<div class="row">
+												<strong><span id="emisorNombre"></span></strong>
+											</div>
+											<div class="row">
+												<strong><span id="emisorCargo"></span></strong>
+											</div>
+											<div class="row">
+												<strong><span id="emisorCorreo"></span></strong>
+											</div>
+										</td>
+									</tr>
+								</table>
 								<div>
 									<div class="textofinal">
-
 										<div><br>
-											<input type="checkbox" id="cbox1" name="cbox1" value="1" checked />
-											<label for="cbox1">Si marca esta opción, seguiremos a la espera de una
-												solución del
-												Colegio, de lo contrario, esperaremos la aceptación del
-												Apoderado.</label>
+											<label class="form-label" for="tiporespuesta">Elija una de las siguientes opciones</label><span class="required-input">*</span>
+											<select class="form-control" id="tiporespuesta" name="tiporespuesta" required="">
+													<option value="" selected disabled>---------</option>
+													{% for tipo in tiporespuestas %}
+														<option value="{{ tipo.id }}">{{ tipo.nombre }}</option>
+													{% endfor %}
+											</select>
 										</div>
 									</div>
 									<div><br><br>
@@ -173,4 +210,23 @@
 </footer>
 
 </html>
+<script>
+	document.addEventListener('DOMContentLoaded', function () {
+		var emisorSelect = document.getElementById('emisor');
+		emisorSelect.addEventListener('change', function () {
+			var selectedOption = this.options[this.selectedIndex];
+			var nombre = selectedOption.getAttribute('data-nombre');
+			var cargo = selectedOption.getAttribute('data-cargo');
+			var correo = selectedOption.getAttribute('data-correo');
 
+			if (nombre) {
+				document.getElementById('emisorNombre').textContent = nombre;
+				document.getElementById('emisorCargo').textContent = cargo;
+				document.getElementById('emisorCorreo').textContent = correo;
+				document.getElementById('emisorDetalles').style.display = 'block';
+			} else {
+				document.getElementById('emisorDetalles').style.display = 'none';
+			}
+		});
+	});
+</script>

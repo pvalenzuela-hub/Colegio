@@ -214,7 +214,7 @@ class Ticket(models.Model):
     apellidoalumno = models.CharField(max_length=80,default="")
     nivel = models.ForeignKey(Nivel,on_delete=models.DO_NOTHING,default=1)
     curso = models.ForeignKey(Curso,on_delete=models.DO_NOTHING,default=1)
-    aisgnatura = models.ForeignKey(Asignatura, on_delete=models.DO_NOTHING,default=1)
+    asignatura = models.ForeignKey(Asignatura, on_delete=models.DO_NOTHING,default=1)
     fechaprimerenvio = models.DateTimeField(null=True,blank=True)
     fechaprimerarespuesta = models.DateTimeField(null=True,blank=True)
 
@@ -283,4 +283,30 @@ class Seguimiento(models.Model):
         ordering = ["id"]
         db_table = 'Seguimiento'
 
+class TipoRespuestaColegio(models.Model):
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=80)
 
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        ordering = ["nombre"]
+        db_table = 'Tiporespuestacolegio'
+
+class Mensaje(models.Model):
+    id = models.AutoField(primary_key=True)
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE)
+    fechora = models.DateTimeField(auto_now_add=True)
+    correoemisor = models.CharField(max_length=80)
+    correodestino = models.CharField(max_length=80)
+    respondido = models.BooleanField(default=False)
+    asunto = models.CharField(max_length=100)
+    message = models.TextField()
+
+    def __str__(self):
+        return str(self.id)+' - '+str(self.ticket)+' : '+self.correoemisor
+
+    class Meta:
+        ordering = ['fechora']
+        db_table = 'Mensajes'

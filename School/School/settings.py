@@ -85,12 +85,18 @@ WSGI_APPLICATION = "School.wsgi.application"
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'bridgecomms$default',
+        'USER': 'bridgecomms',
+        'PASSWORD': 'Colegio2024',
+        'HOST': '127.0.0.1',  # Usar localhost para el túnel SSH
+        'PORT': '3307',  # El puerto local que has redirigido
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
