@@ -99,6 +99,7 @@
 							<form id="respuesta" action="{% url 'respuesta_colegio' %}" method="post">
 								{% csrf_token %}
 								<input type="hidden" name="idticket" id="idticket" value="{{ ticket_id }}">
+								<input type="hidden" name="idmensaje" id="idmensaje" value="{{ mensaje_id }}">
 								<input type="hidden" name="subject" id="subject" value="{{ subject }}">
 								<table>
 									<tr>

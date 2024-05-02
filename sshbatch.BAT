@@ -1,0 +1,1 @@
+ssh -L 3307:bridgecomms.mysql.pythonanywhere-services.com:3306 bridgecomms@ssh.pythonanywhere.com

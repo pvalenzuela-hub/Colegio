@@ -25,7 +25,7 @@ class Estadoticket(models.Model):
         return self.nombre+' - '+str(self.id)
 
     class Meta:
-        ordering = ["nombre"]
+        ordering = ["id"]
         db_table = 'EstadoTicket'
 
 class Area(models.Model):

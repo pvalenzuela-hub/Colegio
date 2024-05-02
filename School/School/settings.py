@@ -87,15 +87,15 @@ WSGI_APPLICATION = "School.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bridgecomms$default',
-        'USER': 'bridgecomms',
+        'NAME': 'pythonda_bridge',
+        'USER': 'pythonda_bridgecomms',
         'PASSWORD': 'Colegio2024',
-        'HOST': '127.0.0.1',  # Usar localhost para el túnel SSH
-        'PORT': '3307',  # El puerto local que has redirigido
+        'HOST': '131.72.236.194',
+        'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             }
-    }
+    },
 }
 
 # Password validation

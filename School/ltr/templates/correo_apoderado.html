@@ -76,57 +76,54 @@
     <div class="row fondo">
         <div class="container">
             <div class="content">
-                <div style="text-align: center;">
+                <!-- <div style="text-align: center;">
                     <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
-                </div>
+                </div> -->
                 <div class="encabezado">
-                    <p>Estimado(a) {{ destinatario }}<br></p>
-                    <p><strong>¡Has recibido un nuevo caso de un apoderado!</strong> </p>
-                    <p>Te informamos el detalle a continuación:</p>
+                    <p>Estimado(a) {{ ticket.nombre }} {{ ticket.apellido }}<br></p>
                 </div>
 
-                <p class="textos" style="text-align: center;"><strong>N° Caso :</strong> {{ ticket.id }}<br>
-                    <strong>Fecha ingreso :</strong> {{ ticket.fechacreacion|date:"d/m/Y" }}
+                <p class="textos">
+                    {{ message }}
                 </p>
-
-                <p class="textos"><strong>DATOS APODERADO</strong><br>
-                    Nombre: {{ apoderado }}<br>
-                    Correo: {{ ticket.correo }}<br>
-                    Fono: {{ ticket.telefono }}</p>
-
-                <p class="textos"><strong>DATOS ALUMNO</strong><br>
-                    Nombre: {{ alumno }}<br>
-                    Nivel: {{ ticket.nivel.nombre }}<br>
-                    Curso: {{ ticket.curso.nombre }}</p>
-
-                <p class="textos">Tipo contacto : {{ ticket.tipocontacto.nombre }}<br>
-                    Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre }}<br>
-                </p>
-
-                <p class="textos"><strong>MENSAJE</strong><br>
-                    {{ ticket.motivo }}
-                </p>
-
-                <table width="100%" cellspacing="0" cellpadding="0">
+                <table>
                     <tr>
                         <td>
-                            <table cellspacing="0" cellpadding="0" align="center">
-                                <tr>
-                                    <td style="border-radius: 4px;" bgcolor="#004A99">
-                                        <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_colegio/{{ ticket.id }}"
-                                            target="_blank"
-                                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responde
-                                            al apoderado Aqui</a>
-                                    </td>
-                                </tr>
-                            </table>
+                            <strong>{{ persona.nombre }}</strong><br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>{{ persona.cargo }}</strong><br>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>{{ persona.correo }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="text-align: center;">
+                                <img class="" src="{% static ''%}assets/images/logofirma.png" alt="img"
+                                    style="height:150px">
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Para responder el presente correo, favor hacer clic en el siguiente botón:</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-radius: 4px;" bgcolor="#004A99">
+                            <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
+                                target="_blank"
+                                style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Click
+                                aquí para responder</a>
                         </td>
                     </tr>
                 </table>
-                <p class="footer">Recuerda que debes responder al apoderado haciendo click en el botón azul, de lo
-                    contrario, tu respuesta no quedará registrada en el sistema y el caso permanecerá abierto a espera
-                    de tu respuesta.</p>
-
             </div>
         </div>
     </div>

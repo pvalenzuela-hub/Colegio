@@ -218,7 +218,7 @@
                                          <tr>
                                             <td>
                                                 {% if ticket.estadoticket_id == 1 %}
-                                                    <form action="enviacorreocolegio" method="post">
+                                                    <form action="{% url 'enviacorreocolegio' %}" method="post">
                                                         {% csrf_token %}
                                                                                                 
                                                         <input type="hidden" readonly="readonly" value="{{user_id}}" name="userid"
