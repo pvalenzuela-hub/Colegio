@@ -1,0 +1,176 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Respuesta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .container {
+            padding: 0%;
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            background-color: white;
+            border: 0px;
+
+        }
+
+        .fondo {
+            background-color: #f5f5f5;
+            height: auto;
+        }
+
+        .textos {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #757171;
+            font-size: 1.3em;
+            text-align: left;
+
+            padding-left: 50px;
+        }
+
+        .fila {
+            width: 800px;
+        }
+
+        .boton {
+            padding-left: 240px;
+
+        }
+
+        .textofinal {
+            text-align: center;
+            width: 600px;
+            margin-left: 40px;
+        }
+
+        #cbox1 {
+            width: 30px;
+            /* Ajusta el ancho del checkbox */
+            height: 30px;
+            /* Ajusta la altura del checkbox */
+            cursor: pointer;
+            /* Hace que el cursor sea una mano cuando se pasa sobre el checkbox */
+        }
+
+        .titulo {
+            text-align: center;
+            width: 800px;
+            margin-left: 40px;
+            background-color: white;
+        }
+
+        .logo {
+            height: 135px;
+        }
+
+        .firma {
+            font-size: 14px;
+            margin-left: 15%;
+            margin-top: 0%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="row fondo">
+        <div class="container">
+            <div class="content">
+
+                <div style="text-align: center;">
+                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg"
+                        alt="logo" class="logo">
+                </div>
+                <div class="titulo">
+                    <h3 style="color:#21529b ;text-align: left;">
+                        <strong>Este correo ya fue respondido el día {{ mensaje.fechora |date:"d/M/Y" }}</strong>
+                    </h3>
+
+                    <h4 style="color:#21529b ;text-align: left;">
+                        <strong>Respuesta al Apoderado</strong>
+                    </h4>
+                </div>
+
+                <div class="content">
+                    <div class="row textos">
+                        <div class="col-12" id="message-1">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <label class="form-label">De</label>
+                                    </td>
+                                    <td>
+                                        <label class="form-label">{{ mensaje.correoemisor }}</label>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="form-label">Para</label>
+                                    </td>
+                                    <td>
+                                        <label class="form-label">{{ mensaje.correodestino }}</label>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td><br>
+                                        <label class="form-label">Asunto</label>
+                                    </td>
+                                    <td>
+                                        <label class="form-label">{{ mensaje.asunto }}</label>
+                                    </td>
+                                </tr>
+                                <br>
+                                <tr>
+                                    <td><label class="form-label">Mensaje</label></td>
+
+                                    <td class="fila">
+                                        <div class="col-sm-9 col-xl-10">
+                                            <textarea class="form-control mb-4" readonly
+                                                rows="10">{{ mensaje.message }}</textarea>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table>
+                                <tr>
+                                    <td>
+                                        <label class="form-label">Firma</label>
+                                    </td>
+                                    <td class="firma">
+                                        <div style="text-align: center;">
+                                            <img class="" src="{% static ''%}assets/images/logofirma.png" alt="img"
+                                                style="height:150px">
+                                        </div>
+                                    </td>
+                                    <td class="firma">
+                                        <div class="row">
+                                            <strong><span>{{ mensaje.persona.nombre }}</span></strong>
+                                        </div>
+                                        <div class="row">
+                                            <strong><span>{{ mensaje.persona.cargo }}</span></strong>
+                                        </div>
+                                        <div class="row">
+                                            <strong><span>{{ mensaje.persona.correo }}</span></strong>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

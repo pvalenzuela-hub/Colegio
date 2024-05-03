@@ -80,7 +80,7 @@
                     <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
                 </div>
                 <div class="encabezado">
-                    <p>Estimado(a) {{ destinatario }},<br>{{ cargo }}</p>
+                    <p>Estimado(a) {{ destinatario.nombre }}<br>{{ destinatario.cargo }}</p>
                     {% if ticketnuevo == 1 %}
                         <p><strong>¡Has recibido un nuevo caso de un apoderado!</strong></p>
                     {% else %}
@@ -96,12 +96,12 @@
               
 
                     <p class="textos"><strong>DATOS APODERADO</strong><br>
-                        Nombre: {{ apoderado }}<br>
+                        Nombre: {{ ticket.nombre }} {{ ticket.apellido }}<br>
                         Correo: {{ ticket.correo }}<br>
                         Fono: {{ ticket.telefono }}</p>
 
                     <p class="textos"><strong>DATOS ALUMNO</strong><br>
-                        Nombre: {{ alumno }}<br>
+                        Nombre: {{ ticket.nombrealumno }} {{ ticket.apellidoalumno }}<br>
                         Nivel: {{ ticket.nivel.nombre }}<br>
                         Curso: {{ ticket.curso.nombre }}</p>
 

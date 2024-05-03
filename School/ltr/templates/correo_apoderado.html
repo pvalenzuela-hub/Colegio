@@ -7,124 +7,97 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-
-        .fondo {
-            background-color: #f5f5f5;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 450px;
-            margin: auto;
-            background-color: white;
-        }
-
-        .header {
-            background-color: #F3F3F3;
-            padding: 10px;
-            text-align: center;
-        }
 
         .logo {
             height: 135px;
         }
 
-        .content {
-            padding: 20px;
-        }
-
-        .button {
-            background-color: #004A99;
-            color: white;
-            padding: 10px 20px;
-            text-align: center;
-            display: inline-block;
-            text-decoration: none;
-        }
-
-        .encabezado {
-            padding-left: 30px;
-            padding-right: 30px;
-            font-family: Arial, Helvetica, sans-serif;
-            text-align: center;
-            color: #21529b;
-            font-size: medium;
-        }
-
         .textos {
             font-family: Arial, Helvetica, sans-serif;
-            color: #757171;
-            font-size: 12px;
+            color: black;
+            font-size: 14px;
             text-align: justify;
         }
 
-        .footer {
-            padding-left: 40px;
-            padding-right: 40px;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #757171;
+
+        .boton-texto {
+            font-size: 16px;
+            font-family: Helvetica, Arial, sans-serif;
+            color: #ffffff !important;
+            text-decoration:solid;
+            padding-top: 8px;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: bold;
             text-align: center;
-            font-size: 0.7em;
+            display: block; /* Cambia a 'block' para permitir el control del ancho */
+            width: 235px; /* Ajusta el ancho del texto, si deseas que sea más específico */
+            
+
+        }
+
+        .boton-imagen {
+            text-align: left;
+            border-radius: 4px;
+            background-color: #004A99;
+            padding: 0px; /* Elimina el padding para evitar espacio extra alrededor del enlace */
+            width: 235px; /* Ajusta esto según el tamaño deseado, o usa 'width: 60px;' si quieres un ancho específico */
+            height: 40px;
         }
     </style>
 </head>
 
 <body>
-    <div class="row fondo">
-        <div class="container">
-            <div class="content">
-                <!-- <div style="text-align: center;">
+    <div class="row">
+        <div class="content">
+            <!-- <div style="text-align: center;">
                     <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
                 </div> -->
-                <div class="encabezado">
-                    <p>Estimado(a) {{ ticket.nombre }} {{ ticket.apellido }}<br></p>
-                </div>
-
-                <p class="textos">
-                    {{ message }}
-                </p>
-                <table>
-                    <tr>
-                        <td>
-                            <strong>{{ persona.nombre }}</strong><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>{{ persona.cargo }}</strong><br>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>{{ persona.correo }}</strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div style="text-align: center;">
-                                <img class="" src="{% static ''%}assets/images/logofirma.png" alt="img"
-                                    style="height:150px">
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <strong>Para responder el presente correo, favor hacer clic en el siguiente botón:</strong>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="border-radius: 4px;" bgcolor="#004A99">
-                            <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
-                                target="_blank"
-                                style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Click
-                                aquí para responder</a>
-                        </td>
-                    </tr>
-                </table>
+            <div class="textos">
+                <p>Estimado(a) {{ ticket.nombre }} {{ ticket.apellido }}</p>
+                <p> {{ texto }} </p>
             </div>
+            <div>
+                <strong>{{ persona.nombre }}</strong>
+            </div>
+            <div>
+                <strong>{{ persona.cargo }}</strong>
+            </div>
+            <div>
+                <strong>{{ persona.correo }}</strong>
+            </div>
+            <div style="text-align: left;">
+                <img class="" src="{% static ''%}assets/images/logofirma.png" alt="logofirma" style="height:150px">
+            </div>
+            <div>
+                <p><strong>Para responder el presente correo, favor hacer clic en el siguiente botón:</strong></p>
+            </div>
+            <div class="boton-imagen col-sm-4">
+                <!-- <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
+                target="_blank" class="boton-texto">Clic aquí para responder</a> -->
+
+                <a href="http://127.0.0.1:8000/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
+                target="_blank" class="boton-texto">Clic aquí para responder</a>
+
+
+            </div>
+
+            <table>
+                <tr>
+                    <td>
+                   
+                    </td>
+                </tr>
+                <tr><br><br>
+
+                    <!-- <td style="border-radius: 4px;" bgcolor="#004A99">
+                        <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
+                            target="_blank"
+                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 0px 0px; border-radius: 4px; display: inline-block; font-weight:bold;text-align: left;">Clic
+                            aquí para responder</a>
+                    </td> -->
+                </tr>
+            </table>
         </div>
     </div>
 

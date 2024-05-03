@@ -131,18 +131,24 @@ def obtener_destinatarios_ticket(ticket_id):
 
 
 @transaction.atomic
-def envio_correo_colegio(to_adr,ticket,mensaje,destinatario_correo,nombreapoderado,nombrealumno,asunto,message,ticketnuevo):
+def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunto,message,ticketnuevo):
     ############################
-    # Primer Correo al Colegio #
+    # Envia Correo al Colegio  #
     ############################
     try:
-        
-        template = get_template('colegio_nuevo_ticket.html')
+        print ('to_adr ->', to_adr)
+        print ('ticket ->', ticket)
+        print ('mensaje ->', mensaje)
+        print ('destinatario_correo ->', destinatario_correo)
+        print ('asunto ->', asunto)
+        print ('message ->', message)
+        print ('ticketnuevo ->', ticketnuevo)
+
+
+
+        template = get_template('correo_colegio.html')
         content = template.render({
-            'destinatario': destinatario_correo.nombre,
-            'cargo': destinatario_correo.correo,
-            'apoderado': nombreapoderado,
-            'alumno': nombrealumno,
+            'destinatario': destinatario_correo,
             'ticket': ticket,
             'mensaje': mensaje,
             'message': message,
@@ -159,18 +165,26 @@ def envio_correo_colegio(to_adr,ticket,mensaje,destinatario_correo,nombreapodera
         mail.attach_alternative(content, 'text/html')
         mail.send()
 
-        return True
+        contexto = {
+            'cardtitle': 'Correo ha sido enviado al Colegio en forma exitosa.'
+        }
+        return render(request,'ltr/notify.html',context=contexto)
+        
 
     except Exception as e:
         print(f"Error: {e}")
-
-        return False
+        contexto = {
+            'cardtitle': 'Ha ocurrido un error en el envío del correo, intente nuevamente.'
+        }
+        return render(request,'ltr/notify.html',context=contexto)
+        
 
 
 def envia_primer_correo_colegio(request):
-    #####################################
-    # PRIMER ENVIO DE CORREO AL COLEGIO #
-    #####################################
+    ###########################################################
+    #           PRIMER ENVIO DE CORREO AL COLEGIO             #
+    # Prepara los datos para llamar a la función envio_correo #
+    ###########################################################
         
     # Prepara los datos para llamar al envio_correo_colegio
 
@@ -178,33 +192,26 @@ def envia_primer_correo_colegio(request):
     nuevo_estado = get_object_or_404(Estadoticket, id=2)
     user = get_object_or_404(User, username='bridge')
     area = ticket.subarea.area.nombre
-    nombreapoderado = " ".join(
-        (ticket.nombre + " " + ticket.apellido).split())
-    nombrealumno = " ".join(
-        (ticket.nombrealumno + " " + ticket.apellidoalumno).split())
 
     personas_destinatarias, principal = obtener_destinatarios_ticket(ticket.id)
 
-    print ('personas_destinatarias :',personas_destinatarias)
-
     to_adr = [persona.correo for persona in personas_destinatarias]
 
-    print ('lista de correos a enviar: ', to_adr)
+    asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
 
-    to_adr = ['negocio.paulo@gmail.com']
-
-    asunto='Nuevo Caso en Sistema de Bienestar'
+    # asunto='Nuevo Caso en Sistema de Bienestar'
     emisor = 'bienestar@colegiolaabadia.cl'
     message = f"De: {emisor}\n Para: {principal.correo}\n Asunto: {asunto}\n Mensaje: {ticket.motivo}"
     try:
-        # Crear Primer registro de Mensaje para el ticket
+        # Crea Mensaje
         nuevo_mensaje = Mensaje.objects.create(
             ticket=ticket,
             correoemisor=emisor,
             correodestino=principal.correo,
             respondido=0,
             asunto=asunto,
-            message=message
+            message=message,
+            persona=principal
         )
         # Actualiza Ticket
         fec = datetime.today()
@@ -213,7 +220,7 @@ def envia_primer_correo_colegio(request):
         ticket.fechahoracambioestado = fec
         ticket.save()
 
-        # Crear un nuevo registro en Seguimiento
+        # Crea Seguimiento
         Seguimiento.objects.create(
             ticket=ticket,
             comentario=f'se deriva caso al área {area}',
@@ -222,12 +229,11 @@ def envia_primer_correo_colegio(request):
         )
 
         envio = envio_correo_colegio(
+            request,
             to_adr,
             ticket,
             nuevo_mensaje,
             principal,
-            nombreapoderado,
-            nombrealumno,
             asunto,
             message,
             1
@@ -249,61 +255,67 @@ def pruebacorreo(request):
     # botón desde Descripción para envío de correo
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
     print(ticket)
-    envio_correo_colegio(ticket.id)
+   # envio_correo_colegio(ticket.id)
     return render(request, 'exito.html')
 
 
 def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
     ##############################################################################
+    #               L I N K    CORREO COLEGIO                                    #
     # Vista que se presenta luego de presionar el Link en el correo del Colegio  #
-    # desde aquí se dará respuesta al Apoderado                                  # 
+    # desde aquí se dará respuesta al Apoderado al presionar el botón ENVIAR     # 
     ##############################################################################
     template_name = "formulario_respuesta_colegio.html"
 
-    # recuperar la lista de destinatarios según subarea
     ticket = get_object_or_404(Ticket, id=ticket_id)
     mensaje = get_object_or_404(Mensaje,id = mensaje_id)
 
-    asunto = ticket.tipocontacto.nombre+' - ' + \
-        ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
-    tiporespuesta = TipoRespuestaColegio.objects.all()
+    try:
+        mensaje_respondido = Mensaje.objects.get(idmensajerespondido=mensaje.id)
+    except Mensaje.DoesNotExist:
+        mensaje_respondido = None
+
+    # Validar que correo no haya sido respondido
+    if mensaje.respondido == 1:
+        # mensaje ya fue respondido
+        contexto = {
+            'mensaje': mensaje_respondido,
+        }
+       
+        return render(request, 'correo_respondido.html', contexto)
+        
+    
+    tiporespuesta = TipoRespuestaColegio.objects.all().order_by('id')
 
     # Obtener todos los destinatarios sin duplicados, en este caso el principal es el Apoderado (no se usa)
     personas_destinatarios,principal = obtener_destinatarios_ticket(ticket.id)
 
     contexto = {
-        'ticket_id': ticket_id,
         'ticket': ticket,
-        'mensaje_id': mensaje.id,
+        'mensaje': mensaje,
         'destinatarios': personas_destinatarios,
-        'subject': asunto,
         'tiporespuestas': tiporespuesta,
+
     }
     return render(request, template_name, context=contexto)
 
 
 @transaction.atomic
-def envio_correo_apoderado(to_adr, subject, message, firma_id, ticket_id, mensaje_id):
-    # Envío Correo al Apoderado
+def envio_correo_apoderado(request,to_adr, subject, message, persona_firma, ticket, mensaje):
+    #############################
+    # Envío Correo al Apoderado #
+    #############################
     try:
-        ticket = get_object_or_404(Ticket, id=ticket_id)
-        mensaje = get_object_or_404(Mensaje, id=mensaje_id)
-        persona = get_object_or_404(Personas, id=firma_id)
-
-        print ('to_adr', to_adr)
-        print ('subject :', subject)
-        print ('message :', message)
-        print ('firma_id', firma_id)
-        print ('ticket_id :', ticket_id)
-        print ('mensaje_id :', mensaje_id)
-
+        # ticket = get_object_or_404(Ticket, id=ticket_id)
+        # mensaje = get_object_or_404(Mensaje, id=mensaje_id)
+        #persona = get_object_or_404(Personas, id=firma_id)
 
         template = get_template('correo_apoderado.html')
         content = template.render({
             'ticket': ticket,
             'mensaje': mensaje,
-            'persona': persona,
-            'message': message,
+            'persona': persona_firma,
+            'texto': message,
         })
 
         mail = EmailMultiAlternatives(
@@ -314,29 +326,54 @@ def envio_correo_apoderado(to_adr, subject, message, firma_id, ticket_id, mensaj
         )
         mail.attach_alternative(content, 'text/html')
         mail.send()
-        return True
+        contexto = {
+            'cardtitle': 'Correo ha sido enviado al Apoderado.'
+            }
+        return render(request,'ltr/notify.html',context=contexto)
+        
     except Exception as e:
         print(f"Error: {e}")
-        return False
+        contexto = {
+            'cardtitle': 'Ha ocurrido un error al intentar enviar el correo al Apoderado. Por favor intente nuevamente.'
+            }
+        return render(request,'ltr/notify.html',context=contexto)
+        
+
+def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
+    ###############################################################################
+    # Vista que se presenta luego de presionar el Link en el correo del Apoderado #
+    # desde aquí se dará respuesta al Colegio una vez presione el botón ENVIAR    # 
+    ###############################################################################
+    template_name = "formulario_respuesta_apoderado.html"
+
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    mensaje = get_object_or_404(Mensaje,id = mensaje_id)
+
+    contexto = {
+        'ticket': ticket,
+        'mensaje': mensaje,
+        
+    }
+    return render(request, template_name, context=contexto)
 
 
 def respuesta_colegio(request):
-    #######################################
-    # Aquí viene la Respuesta del Colegio #
-    #  Se enviará un correo al Apoderado #
-    ######################################
-
-  
-
+    ##############################################################################################
+    # Aquí viene la Respuesta del Colegio desde el formulario: formulario_respuesta_colegio.html #
+    # Se preparan los datos para enviar correo al Apoderado                                      #
+    ##############################################################################################
     if request.method == 'POST':
-        ticket = Ticket.objects.get(id=request.POST.get('idticket'))
+       
+        idticket = request.POST['idticket']
         tiporespuesta = request.POST['tiporespuesta']
         respuesta = request.POST['motivo']
         emisor = request.POST['emisor']
-        asunto = request.POST['subject']
         currentmensaje = request.POST['idmensaje']
 
         try:
+            # Lee datos del ticket
+            ticket = get_object_or_404(Ticket,id = idticket)
+
             # Actualiza estado del mensaje anterior como Respondido
             mensaje = get_object_or_404(Mensaje, id=currentmensaje)
             mensaje.respondido = 1
@@ -344,7 +381,6 @@ def respuesta_colegio(request):
 
             fechahoracambioestado = datetime.today()
           
-
             if tiporespuesta == '1':
                 # da respuesta al Apoderado
                 opcion = 4
@@ -374,9 +410,7 @@ def respuesta_colegio(request):
             user = get_object_or_404(User, username='bridge')
             personaemisor = get_object_or_404(Personas, id=emisor)
 
-            motivo = personaemisor.nombre+' , Correo: ' + \
-                personaemisor.correo+', Mensaje : ' + respuesta
-             
+            motivo = personaemisor.nombre+' , (' + personaemisor.correo+'), Mensaje : ' + respuesta
 
             Seguimiento.objects.create(
                 ticket=ticket,
@@ -387,42 +421,155 @@ def respuesta_colegio(request):
             lista_destinatarios, principal = obtener_destinatarios_ticket(ticket.id)
             destinatarios_str = [persona.correo for persona in lista_destinatarios]
             destinatarios_str.insert(0, ticket.correo)
-            
-        
-            print ('destinatarios_str', destinatarios_str)
 
-            message = f"De: {personaemisor.correo}\n Para: {ticket.correo},{destinatarios_str}\n Asunto: {asunto}\n Mensaje: {respuesta}"
+            correos_formateados = ', '.join(destinatarios_str)  # Formatea la lista a un string separado por comas
+            message = f"De: {personaemisor.correo}\nPara: {correos_formateados}\nAsunto: {mensaje.asunto}\nMensaje: {respuesta}"
+            #message = f"De: {personaemisor.correo}\n Para: {destinatarios_str}\n Asunto: {mensaje.asunto}\n Mensaje: {respuesta}"
 
             nuevo_mensaje = Mensaje.objects.create(
                 ticket=ticket,
                 correoemisor=personaemisor.correo,
                 correodestino=ticket.correo,
                 respondido=0,
-                asunto=asunto,
-                message=message
+                asunto=mensaje.asunto,
+                message=message,
+                persona=personaemisor,
+                idmensajerespondido=mensaje.id
             )
-            mensaje_id = nuevo_mensaje.id
 
             # enviar correo de respuesta al Apoderado cc a todos los involucrados
+           
             envio_correo_apoderado(
+                request,
                 destinatarios_str,
-                asunto,
-                message,
-                personaemisor.id,
-                ticket.id,
-                mensaje_id
+                mensaje.asunto,
+                respuesta,
+                personaemisor,
+                ticket,
+                nuevo_mensaje
             )
-            
-            return render(request, 'respuesta_ok.html')
+
+            contexto = {
+                'cardtitle': 'Correo ha sido enviado al Apoderado.'
+            }
+            return render(request,'ltr/notify.html',context=contexto)
+
+
+        except Exception as e:
+            #print(f"Error: {e}")
+            contexto = {
+                'cardtitle': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                }
+            return render(request, 'ltr/notify.html',context=contexto)
+    else:
+        # Redireccionar o mostrar un error si se accede al método incorrecto
+        contexto = {
+            'cardtitle': 'No es posible ingresar a este formulario.'
+                }
+        return render(request, 'ltr/notify.html',context=contexto)
+
+
+def respuesta_apoderado(request):
+    ##################################################################################################
+    # Aquí viene la Respuesta del Apoderado desde el formulario: formulario_respuesta_apoderado.html #
+    # Se preparan los datos para enviar respuesta al Colegio                                         #
+    ##################################################################################################
+    if request.method == 'POST':
+        idticket = request.POST['idticket']
+        respuesta = request.POST['motivo']
+        currentmensaje = request.POST['idmensaje']
+
+        print ('idticket ', idticket)
+        print ('respuesta ',respuesta)
+        print ('currentmensaje ', currentmensaje)
+
+        try:
+            # Lee datos del ticket
+            ticket = get_object_or_404(Ticket,id = idticket)
+
+            # Actualiza estado del mensaje anterior como Respondido
+            mensaje = get_object_or_404(Mensaje, id=currentmensaje)
+            mensaje.respondido = 1
+            mensaje.save()
+
+            # crea seguimiento con datos de respuesta del colegio al apoderado
+            user = get_object_or_404(User, username='bridge')
+            #personaemisor = get_object_or_404(Personas, id=emisor)
+
+            motivo = ticket.nombre+' '+ticket.apellido+' , (' + ticket.correo+'), Mensaje : ' + respuesta
+
+            Seguimiento.objects.create(
+                ticket=ticket,
+                comentario=motivo,
+                user=user)
+
+            # Crear registro modelo:Mensaje
+            lista_destinatarios, principal = obtener_destinatarios_ticket(ticket.id)
+            destinatarios_str = [persona.correo for persona in lista_destinatarios]
+            destinatarios_str.insert(0, ticket.correo)
+
+            correos_formateados = ', '.join(destinatarios_str)  # Formatea la lista a un string separado por comas
+            message = f"De: {mensaje.correodestino}\nPara: {correos_formateados}\nAsunto: {mensaje.asunto}\nMensaje: {respuesta}"
+
+            nuevo_mensaje = Mensaje.objects.create(
+                ticket=ticket,
+                correoemisor=mensaje.correodestino,
+                correodestino=mensaje.correoemisor,
+                respondido=0,
+                asunto=mensaje.asunto,
+                message=message,
+                persona=mensaje.persona,
+                idmensajerespondido=mensaje.id
+            )
+
+            # enviar correo de respuesta al Apoderado cc a todos los involucrados
+            print ('destinatarios_str ->',destinatarios_str)
+            print ('ticket ->', ticket)
+            print ('mensaje ->', mensaje)
+            print ('mensaje.persona ->',mensaje.persona)
+            print ('mensaje.asunto ->',mensaje.asunto)
+            print ('respuesta ->',respuesta)
+            print ('nuevo_mensaje ->', nuevo_mensaje)
+
+            envio_correo_colegio(
+                request,
+                destinatarios_str,
+                ticket,
+                mensaje,  
+                mensaje.persona,
+                mensaje.asunto,
+                respuesta,
+                nuevo_mensaje,
+                0
+                
+            )
+           
+            # envio_correo_apoderado(
+            #     destinatarios_str,
+            #     mensaje.asunto,
+            #     respuesta,
+            #     personaemisor.id,
+            #     ticket,
+            #     nuevo_mensaje
+            # )
+            contexto = {
+                'cardtitle': 'Correo ha sido enviado al Apoderado.'
+            }
+            return render(request,'ltr/notify.html',context=contexto)
+
 
         except Exception as e:
             print(f"Error: {e}")
-            return False
-       
+            contexto = {
+                'cardtitle': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                }
+            return render(request, 'ltr/notify.html',context=contexto)
     else:
         # Redireccionar o mostrar un error si se accede al método incorrecto
-        return redirect('error_url')
-
+        contexto = {
+            'cardtitle': 'No es posible ingresar a este formulario.'
+                }
+        return render(request, 'ltr/notify.html',context=contexto)
 
 def enviacorreoalapoderado(request):
     # Envío correo de respuesta al Apoderado
@@ -614,12 +761,7 @@ def ejemplo_correo(request):
     return render(request, 'ejemplo_correo.html')
 
 
-def truncar_tabla_con_reset(request):
-    with connection.cursor() as cursor:
-        cursor.execute('DELETE FROM Ticket;')
-        # Esto reseteará el contador de ID
-        cursor.execute('DELETE FROM sqlite_sequence WHERE name="Ticket";')
-    return render(request)
+
 ############################################ < xanex > ############################################
 
 

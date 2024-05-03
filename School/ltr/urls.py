@@ -23,6 +23,7 @@ urlpatterns = [
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     #path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
     path('formulario_respuesta_colegio/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_colegio, name='formulario_respuesta_colegio'),
+    path('formulario_respuesta_apoderado/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_apoderado, name='formulario_respuesta_apoderado'),
     path('registroticket', views.registroticket, name='registroticket'),
     path('ajax/cargar-subareas/', views.cargar_subareas, name='ajax_cargar_subareas'),
     path('creaticket', views.creaticket, name = 'crearticket'),
@@ -32,12 +33,9 @@ urlpatterns = [
     path("ticket/<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
     path('ticket/guardacomentario', views.guardacomentario,name="graba-comentario"),
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),
+    path('respuestaapoderado', views.respuesta_apoderado, name = 'respuesta_apoderado'),
     path('enviacorreocolegio', views.envia_primer_correo_colegio, name = 'enviacorreocolegio'),
     
-    
-
-
-    path('truncarticket/', views.truncar_tabla_con_reset, name='truncar_ticket'),
     path('ejemplo', views.ejemplo_correo, name='ejemplo-correo'),
     
 ###################################################< Zanex >######################################

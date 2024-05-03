@@ -303,6 +303,8 @@ class Mensaje(models.Model):
     respondido = models.BooleanField(default=False)
     asunto = models.CharField(max_length=100)
     message = models.TextField()
+    persona = models.ForeignKey(Personas,on_delete=models.CASCADE,default=1)
+    idmensajerespondido = models.IntegerField(default=0, db_index=True)
 
     def __str__(self):
         return str(self.id)+' - '+str(self.ticket)+' : '+self.correoemisor
