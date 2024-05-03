@@ -77,43 +77,45 @@
         <div class="container">
             <div class="content">
                 <div style="text-align: center;">
-                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
+                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg"
+                        alt="logo" class="logo">
                 </div>
                 <div class="encabezado">
                     <p>Estimado(a) {{ destinatario.nombre }}<br>{{ destinatario.cargo }}</p>
                     {% if ticketnuevo == 1 %}
-                        <p><strong>¡Has recibido un nuevo caso de un apoderado!</strong></p>
+                    <p><strong>¡Has recibido un nuevo caso de un apoderado!</strong></p>
                     {% else %}
-                        <p><strong>¡Has recibido una respuesta sobre tu caso!</strong></p>
+                    <p><strong>¡Has recibido una respuesta sobre tu caso!</strong></p>
                     {% endif %}
                     <p>Te informamos el detalle a continuación:</p>
                 </div>
 
                 {% if ticketnuevo == 1 %}
-                    <p class="textos" style="text-align: center;"><strong>N° Caso :</strong> {{ ticket.id }}<br>
-                        <strong>Fecha ingreso :</strong> {{ ticket.fechacreacion|date:"d/m/Y" }}
-                    </p>
-              
+                <p class="textos" style="text-align: center;"><strong>N° Caso :</strong> {{ ticket.id }}<br>
+                    <strong>Fecha ingreso :</strong> {{ ticket.fechacreacion|date:"d/m/Y" }}
+                </p>
+                <p class="textos"><strong>DATOS APODERADO</strong><br>
+                    Nombre: {{ ticket.nombre }} {{ ticket.apellido }}<br>
+                    Correo: {{ ticket.correo }}<br>
+                    Fono: {{ ticket.telefono }}
+                </p>
 
-                    <p class="textos"><strong>DATOS APODERADO</strong><br>
-                        Nombre: {{ ticket.nombre }} {{ ticket.apellido }}<br>
-                        Correo: {{ ticket.correo }}<br>
-                        Fono: {{ ticket.telefono }}</p>
+                <p class="textos"><strong>DATOS ALUMNO</strong><br>
+                    Nombre: {{ ticket.nombrealumno }} {{ ticket.apellidoalumno }}<br>
+                    Nivel: {{ ticket.nivel.nombre }}<br>
+                    Curso: {{ ticket.curso.nombre }}
+                </p>
 
-                    <p class="textos"><strong>DATOS ALUMNO</strong><br>
-                        Nombre: {{ ticket.nombrealumno }} {{ ticket.apellidoalumno }}<br>
-                        Nivel: {{ ticket.nivel.nombre }}<br>
-                        Curso: {{ ticket.curso.nombre }}</p>
+                <p class="textos">Tipo contacto : {{ ticket.tipocontacto.nombre }}<br>
+                    Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre
+                    }}<br>
+                </p>
 
-                    <p class="textos">Tipo contacto : {{ ticket.tipocontacto.nombre }}<br>
-                        Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre }}<br>
-                    </p>
-
-                    <p class="textos"><strong>MENSAJE</strong><br>
-                        {{ ticket.motivo }}
-                    </p>
+                <p class="textos"><strong>MENSAJE</strong><br>
+                    {{ ticket.motivo }}
+                </p>
                 {% else %}
-                    <p class="textos">{{ mensaje }}</p>
+                <p class="textos">{{ message }}</p>
                 {% endif %}
                 <table width="100%" cellspacing="0" cellpadding="0">
                     <tr>
@@ -121,12 +123,11 @@
                             <table cellspacing="0" cellpadding="0" align="center">
                                 <tr>
                                     <td style="border-radius: 4px;" bgcolor="#004A99">
-                                        <!-- <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}" -->
-                                                                           
-                                            <!-- <a href="{% url 'formulario_respuesta_colegio' ticket.id mensaje.id %}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responde al apoderado Aqui</a> -->
-                                            
-                                            <!-- url local -->
-                                            <a href="http://127.0.0.1:8000/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder al apoderado aquí</a>
+                                        <!-- <a href="https://bridgecomms.pythonanywhere.com/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder al apoderado aquí</a> -->
+                                        <a href="http://127.0.0.1:8000/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}"
+                                            target="_blank"
+                                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder
+                                            al apoderado aquí</a>
                                     </td>
                                 </tr>
                             </table>

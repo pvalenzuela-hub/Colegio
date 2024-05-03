@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <style>
-
+        
         .logo {
             height: 135px;
         }
@@ -24,15 +24,17 @@
             font-size: 16px;
             font-family: Helvetica, Arial, sans-serif;
             color: #ffffff !important;
-            text-decoration:solid;
+            text-decoration: solid;
             padding-top: 8px;
             border-radius: 4px;
             display: inline-block;
             font-weight: bold;
             text-align: center;
-            display: block; /* Cambia a 'block' para permitir el control del ancho */
-            width: 235px; /* Ajusta el ancho del texto, si deseas que sea más específico */
-            
+            display: block;
+            /* Cambia a 'block' para permitir el control del ancho */
+            width: 235px;
+            /* Ajusta el ancho del texto, si deseas que sea más específico */
+
 
         }
 
@@ -40,8 +42,10 @@
             text-align: left;
             border-radius: 4px;
             background-color: #004A99;
-            padding: 0px; /* Elimina el padding para evitar espacio extra alrededor del enlace */
-            width: 235px; /* Ajusta esto según el tamaño deseado, o usa 'width: 60px;' si quieres un ancho específico */
+            padding: 0px;
+            /* Elimina el padding para evitar espacio extra alrededor del enlace */
+            width: 235px;
+            /* Ajusta esto según el tamaño deseado, o usa 'width: 60px;' si quieres un ancho específico */
             height: 40px;
         }
     </style>
@@ -67,7 +71,9 @@
                 <strong>{{ persona.correo }}</strong>
             </div>
             <div style="text-align: left;">
-                <img class="" src="{% static ''%}assets/images/logofirma.png" alt="logofirma" style="height:150px">
+                <img class="" src="https://bridgecomms.cl/wp-content/uploads/2024/05/firma-La-Abadia.png"
+                    alt="logofirma" style="height:150px">
+
             </div>
             <div>
                 <p><strong>Para responder el presente correo, favor hacer clic en el siguiente botón:</strong></p>
@@ -77,7 +83,7 @@
                 target="_blank" class="boton-texto">Clic aquí para responder</a> -->
 
                 <a href="http://127.0.0.1:8000/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
-                target="_blank" class="boton-texto">Clic aquí para responder</a>
+                    target="_blank" class="boton-texto">Clic aquí para responder</a>
 
 
             </div>
@@ -85,7 +91,7 @@
             <table>
                 <tr>
                     <td>
-                   
+
                     </td>
                 </tr>
                 <tr><br><br>

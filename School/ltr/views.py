@@ -136,15 +136,6 @@ def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunt
     # Envia Correo al Colegio  #
     ############################
     try:
-        print ('to_adr ->', to_adr)
-        print ('ticket ->', ticket)
-        print ('mensaje ->', mensaje)
-        print ('destinatario_correo ->', destinatario_correo)
-        print ('asunto ->', asunto)
-        print ('message ->', message)
-        print ('ticketnuevo ->', ticketnuevo)
-
-
 
         template = get_template('correo_colegio.html')
         content = template.render({
@@ -153,7 +144,6 @@ def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunt
             'mensaje': mensaje,
             'message': message,
             'ticketnuevo': ticketnuevo,
-
         })
 
         mail = EmailMultiAlternatives(
@@ -165,18 +155,12 @@ def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunt
         mail.attach_alternative(content, 'text/html')
         mail.send()
 
-        contexto = {
-            'cardtitle': 'Correo ha sido enviado al Colegio en forma exitosa.'
-        }
-        return render(request,'ltr/notify.html',context=contexto)
-        
+        return True
+
 
     except Exception as e:
         print(f"Error: {e}")
-        contexto = {
-            'cardtitle': 'Ha ocurrido un error en el envío del correo, intente nuevamente.'
-        }
-        return render(request,'ltr/notify.html',context=contexto)
+        return False
         
 
 
@@ -238,11 +222,12 @@ def envia_primer_correo_colegio(request):
             message,
             1
         )
-        if envio:
-            print ('correo enviado')
-        else:
-            print('no se envió correo')
- 
+        if not envio:
+            contexto = {
+            'texto': 'Ha ocurrido un error en el envío del Mensaje, revise la casilla de bienestar@abadia.cl'
+            }
+            return render(request, 'correo_enviado.html', contexto)
+
 
     except Exception as e:
         print(f"Error: {e}")
@@ -271,7 +256,7 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
     mensaje = get_object_or_404(Mensaje,id = mensaje_id)
 
     try:
-        mensaje_respondido = Mensaje.objects.get(idmensajerespondido=mensaje.id)
+        mensaje_respondido = Mensaje.objects.get(mensajerespondidoid=mensaje.id)
     except Mensaje.DoesNotExist:
         mensaje_respondido = None
 
@@ -326,17 +311,13 @@ def envio_correo_apoderado(request,to_adr, subject, message, persona_firma, tick
         )
         mail.attach_alternative(content, 'text/html')
         mail.send()
-        contexto = {
-            'cardtitle': 'Correo ha sido enviado al Apoderado.'
-            }
-        return render(request,'ltr/notify.html',context=contexto)
+        
+        return True
+
         
     except Exception as e:
         print(f"Error: {e}")
-        contexto = {
-            'cardtitle': 'Ha ocurrido un error al intentar enviar el correo al Apoderado. Por favor intente nuevamente.'
-            }
-        return render(request,'ltr/notify.html',context=contexto)
+        return False
         
 
 def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
@@ -434,12 +415,12 @@ def respuesta_colegio(request):
                 asunto=mensaje.asunto,
                 message=message,
                 persona=personaemisor,
-                idmensajerespondido=mensaje.id
+                mensajerespondidoid=mensaje.id
             )
 
             # enviar correo de respuesta al Apoderado cc a todos los involucrados
-           
-            envio_correo_apoderado(
+            
+            envio = envio_correo_apoderado(
                 request,
                 destinatarios_str,
                 mensaje.asunto,
@@ -449,24 +430,29 @@ def respuesta_colegio(request):
                 nuevo_mensaje
             )
 
-            contexto = {
-                'cardtitle': 'Correo ha sido enviado al Apoderado.'
-            }
-            return render(request,'ltr/notify.html',context=contexto)
-
+            if envio:
+                contexto = {
+                    'texto': 'Se enviará una copia a su correo.'
+                    }
+                return render(request,'correo_enviado.html',contexto)
+            else:
+                contexto = {
+                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente'
+                }
+                return render(request,'correo_enviado.html',contexto)
 
         except Exception as e:
             #print(f"Error: {e}")
             contexto = {
-                'cardtitle': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
                 }
-            return render(request, 'ltr/notify.html',context=contexto)
+            return render(request,'correo_enviado.html',contexto)
     else:
         # Redireccionar o mostrar un error si se accede al método incorrecto
         contexto = {
-            'cardtitle': 'No es posible ingresar a este formulario.'
+            'texto': 'No es posible ingresar a este formulario. Contacte al administrador'
                 }
-        return render(request, 'ltr/notify.html',context=contexto)
+        return render(request,'correo_enviado.html',contexto)
 
 
 def respuesta_apoderado(request):
@@ -506,7 +492,7 @@ def respuesta_apoderado(request):
             # Crear registro modelo:Mensaje
             lista_destinatarios, principal = obtener_destinatarios_ticket(ticket.id)
             destinatarios_str = [persona.correo for persona in lista_destinatarios]
-            destinatarios_str.insert(0, ticket.correo)
+            #destinatarios_str.insert(0, ticket.correo)
 
             correos_formateados = ', '.join(destinatarios_str)  # Formatea la lista a un string separado por comas
             message = f"De: {mensaje.correodestino}\nPara: {correos_formateados}\nAsunto: {mensaje.asunto}\nMensaje: {respuesta}"
@@ -519,57 +505,49 @@ def respuesta_apoderado(request):
                 asunto=mensaje.asunto,
                 message=message,
                 persona=mensaje.persona,
-                idmensajerespondido=mensaje.id
+                mensajerespondidoid=mensaje.id
             )
 
             # enviar correo de respuesta al Apoderado cc a todos los involucrados
-            print ('destinatarios_str ->',destinatarios_str)
-            print ('ticket ->', ticket)
-            print ('mensaje ->', mensaje)
-            print ('mensaje.persona ->',mensaje.persona)
-            print ('mensaje.asunto ->',mensaje.asunto)
-            print ('respuesta ->',respuesta)
-            print ('nuevo_mensaje ->', nuevo_mensaje)
 
-            envio_correo_colegio(
+            #request,to_adr,ticket,mensaje,destinatario_correo,asunto,message,ticketnuevo
+            envio = envio_correo_colegio(
                 request,
                 destinatarios_str,
                 ticket,
-                mensaje,  
+                nuevo_mensaje,  
                 mensaje.persona,
                 mensaje.asunto,
                 respuesta,
-                nuevo_mensaje,
                 0
                 
             )
-           
-            # envio_correo_apoderado(
-            #     destinatarios_str,
-            #     mensaje.asunto,
-            #     respuesta,
-            #     personaemisor.id,
-            #     ticket,
-            #     nuevo_mensaje
-            # )
-            contexto = {
-                'cardtitle': 'Correo ha sido enviado al Apoderado.'
-            }
-            return render(request,'ltr/notify.html',context=contexto)
+
+            if envio:
+                contexto = {
+                    'texto': 'Le responderemos a la brevedad'
+                    }
+                return render(request,'correo_enviado.html',contexto)
+            else:
+                contexto = {
+                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente'
+                }
+                return render(request,'correo_enviado.html',contexto)
+
 
 
         except Exception as e:
             print(f"Error: {e}")
             contexto = {
-                'cardtitle': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
                 }
-            return render(request, 'ltr/notify.html',context=contexto)
+            return render(request,'correo_enviado.html',contexto)
     else:
         # Redireccionar o mostrar un error si se accede al método incorrecto
         contexto = {
-            'cardtitle': 'No es posible ingresar a este formulario.'
+            'texto': 'No es posible ingresar a este formulario,contacte al Administrador.'
                 }
-        return render(request, 'ltr/notify.html',context=contexto)
+        return render(request,'correo_enviado.html',contexto)
 
 def enviacorreoalapoderado(request):
     # Envío correo de respuesta al Apoderado

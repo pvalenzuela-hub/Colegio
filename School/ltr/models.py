@@ -218,10 +218,6 @@ class Ticket(models.Model):
     fechaprimerenvio = models.DateTimeField(null=True,blank=True)
     fechaprimerarespuesta = models.DateTimeField(null=True,blank=True)
 
-    class Meta:
-        ordering = ['id']
-        db_table = ''
-
     def __str__(self):
         return str(self.id)+':'+self.fechacreacion.strftime('%d/%m/%Y')+' - '+self.nombre+' '+self.apellido
 
@@ -304,7 +300,7 @@ class Mensaje(models.Model):
     asunto = models.CharField(max_length=100)
     message = models.TextField()
     persona = models.ForeignKey(Personas,on_delete=models.CASCADE,default=1)
-    idmensajerespondido = models.IntegerField(default=0, db_index=True)
+    mensajerespondidoid = models.IntegerField(default=0, db_index=True)
 
     def __str__(self):
         return str(self.id)+' - '+str(self.ticket)+' : '+self.correoemisor
