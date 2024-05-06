@@ -1,3 +1,11 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.utils.decorators import method_decorator
+
+from django.contrib.auth.views import PasswordChangeView, PasswordResetDoneView, UserModel
+from .form import UserForm, PasswordChangingForm, CustomCreationForm
+from django.urls import reverse_lazy
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db import connection
 from django.db import transaction
@@ -22,6 +30,14 @@ from django.contrib.auth.models import User
 #################################################################################################
 # Create your views here.
 #########################
+class PasswordsChangeView(PasswordChangeView):
+    form_class = PasswordChangingForm
+    #form_class = PasswordChangeForm
+    success_url = reverse_lazy('password-success')
+
+def password_success(request):
+    return render(request, 'registration/password_success.html')    
+
 def envia_correo(request):
     # remitente
     remitente = 'bienestar@colegiolaabadia.cl'
@@ -233,7 +249,7 @@ def envia_primer_correo_colegio(request):
         print(f"Error: {e}")
         return False
     
-    return redirect(f'/ticket/{ticket.id}')
+    return redirect(f'/{ticket.id}')
 
 
 def pruebacorreo(request):
@@ -555,7 +571,7 @@ def enviacorreoalapoderado(request):
 
     print(ticket)
     envio_correo_apoderado(ticket.id)
-    return redirect(f'/ticket/{ticket.id}')
+    return redirect(f'/{ticket.id}')
 
 
 def registroticket(request):
@@ -614,8 +630,11 @@ def creaticket(request):
 
     return redirect('/registroticket')
 
+@login_required
+def index(request):
+    return render(request, "index.html")
 
-class Index(DetailView):
+class Index(LoginRequiredMixin,DetailView):
 
     template_name = 'mainticket.html'
 
@@ -680,7 +699,7 @@ class VisorTicket(DetailView):
         }
         return render(request, self.template_name, contexto)
 
-
+@login_required
 def guardacomentario(request):
 
     # print (request.POST)
@@ -718,7 +737,7 @@ def guardacomentario(request):
             seg = Seguimiento.objects.create(
                 ticket=idticket, comentario=f'{user} Cambio de estado {estado_actual} a {nuevo_estado}', user=user)
 
-            return redirect(f'/ticket/{idticket_str}')
+            return redirect(f'/{idticket_str}')
 
     if crear_tarea == '2':
         # llamar a la vistra para crear tarea
@@ -728,9 +747,9 @@ def guardacomentario(request):
         # grabar dato que permite activar envio de correos
         return render(request, 'ltr/index.html')
 
-    return redirect(f'/ticket/{idticket_str}')
+    return redirect(f'/{idticket_str}')
 
-
+@login_required
 def zanex(request):
     return render(request, 'ltr/index.html')
 
@@ -738,8 +757,69 @@ def zanex(request):
 def ejemplo_correo(request):
     return render(request, 'ejemplo_correo.html')
 
+def Logout(_request):
+    return render(_request,'registration/login.html')
 
+def es_admin(user):
+    return user.groups.filter(name='Administrador').exists()
 
+@method_decorator(user_passes_test(es_admin), name='dispatch')
+class Listausuarios(LoginRequiredMixin, ListView):
+    model = User
+    template_name = 'userslist.html'
+
+    def get_queryset(self):
+
+        return self.model.objects.exclude(username = 'root').order_by('first_name')
+
+    def get(self, request, *args, **kwargs):
+
+        contexto = {
+            'usuarios': self.get_queryset(),
+            'encabezado': 'Listado de Usuarios',
+            'menu': 'Usuarios',
+            'submenu': 'Configuración / Usuarios',
+            'titulo': 'Usuarios'
+        }
+        return render(request, self.template_name, contexto)
+
+def Registrouser(request):
+    data = {
+        'form': CustomCreationForm()
+    }
+
+    if request.method == 'POST':
+        formulario = CustomCreationForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            # messages.success(request,'Usuario creado exitosamente!')
+            return redirect(to="list-users")
+        data["form"] = formulario
+
+    return render(request, 'registration/registro.html', data)
+
+def edituser(request, pk):
+    usuario = User.objects.get(id=pk)
+    template_name = 'registration/edit_user.html'
+    data = {
+        'form': UserForm(instance=usuario)
+    }
+    #form = UserForm(instance=usuario)
+
+    if request.method == 'POST':
+        formulario = UserForm(data=request.POST, instance=usuario)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('list-users')
+        else:
+            data = {
+                'form': UserForm(instance=usuario),
+                'msg': 'Ha ocurrido en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)    
 ############################################ < xanex > ############################################
 
 
@@ -752,7 +832,7 @@ def accordion(request):
 
 
 def alerts(request):
-    return render(request, 'ltr/alerts.html')
+    return render(request, 'alerts.html')
 
 
 def avatarradius(request):
@@ -780,7 +860,7 @@ def breadcrumbs(request):
 
 
 def buttons(request):
-    return render(request, 'ltr/buttons.html')
+    return render(request, 'buttons.html')
 
 
 def calendar(request):
@@ -804,51 +884,51 @@ def cart(request):
 
 
 def chart(request):
-    return render(request, 'ltr/chart.html')
+    return render(request, 'chart.html')
 
 
 def chartchartist(request):
-    return render(request, 'ltr/chartchartist.html')
+    return render(request, 'chartchartist.html')
 
 
 def chartdonut(request):
-    return render(request, 'ltr/chartdonut.html')
+    return render(request, 'chartdonut.html')
 
 
 def chartechart(request):
-    return render(request, 'ltr/chartechart.html')
+    return render(request, 'chartechart.html')
 
 
 def chartflot(request):
-    return render(request, 'ltr/chartflot.html')
+    return render(request, 'chartflot.html')
 
 
 def chartline(request):
-    return render(request, 'ltr/chartline.html')
+    return render(request, 'chartline.html')
 
 
 def chartmorris(request):
-    return render(request, 'ltr/chartmorris.html')
+    return render(request, 'chartmorris.html')
 
 
 def chartnvd3(request):
-    return render(request, 'ltr/chartnvd3.html')
+    return render(request, 'chartnvd3.html')
 
 
 def chartpie(request):
-    return render(request, 'ltr/chartpie.html')
+    return render(request, 'chartpie.html')
 
 
 def charts(request):
-    return render(request, 'ltr/charts.html')
+    return render(request, 'charts.html')
 
 
 def chat(request):
-    return render(request, 'ltr/chat.html')
+    return render(request, 'chat.html')
 
 
 def checkout(request):
-    return render(request, 'ltr/checkout.html')
+    return render(request, 'checkout.html')
 
 
 def colors(request):
@@ -1007,8 +1087,8 @@ def lockscreen(request):
     return render(request, 'ltr/lockscreen.html')
 
 
-def login(request):
-    return render(request, 'ltr/login.html')
+# def login(request):
+#     return render(request, 'ltr/login.html')
 
 
 def maps(request):

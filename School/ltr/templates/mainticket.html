@@ -126,9 +126,9 @@
                                                     </thead>
                                                     <tbody>
                                                         {% for nuevo in nuevos %}
-                                                            <tr style="background-color: {{ nuevo.tipocontacto.color }};">
+                                                            <tr>
                                                                 <td align="center">{{ nuevo.id }}</td>
-                                                                <td align="center">{{ nuevo.tipocontacto.nombre }}</td>
+                                                                <td align="center" style="color:{{ nuevo.tipocontacto.color }} "><strong>{{ nuevo.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
                                                                         <div class="ms-2 mt-0 mt-sm-2 d-block">
@@ -186,9 +186,9 @@
                                                     </thead>
                                                     <tbody>
                                                         {% for resp in respuestas %}
-                                                            <tr style="background-color: {{ resp.tipocontacto.color }};">
+                                                            <tr>
                                                                 <td align="center">{{ resp.id }}</td>
-                                                                <td align="center">{{ resp.tipocontacto.nombre }}</td>
+                                                                <td align="center" style="color:{{ resp.tipocontacto.color }} "><strong>{{ resp.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
                                                                         <div class="ms-2 mt-0 mt-sm-2 d-block">
@@ -201,7 +201,7 @@
                                                                     <div class="d-flex">
                                                                         <div class="ms-2 mt-0 mt-sm-2 d-block">
                                                                             <h6 class="mb-0 fs-14 fw-semibold">{{ resp.nivel.nombre }}</h6>
-                                                                            <span class="fs-12 text-muted">{{resp.curso.nombre }}</span>
+                                                                            <span class="fs-12 text-muted" style="text-align: center;">{{resp.curso.nombre }}</span>
                                                                         </div>
                                                                     </div>
                                                                 </td>
@@ -245,9 +245,9 @@
                                                     </thead>
                                                     <tbody>
                                                         {% for acc in acciones %}
-                                                            <tr style="background-color: {{ acc.tipocontacto.color }};">
+                                                            <tr>
                                                                 <td align="center">{{ acc.id }}</td>
-                                                                <td align="center">{{ acc.tipocontacto.nombre }}</td>
+                                                                <td align="center" style="color:{{ acc.tipocontacto.color }} "><strong>{{ acc.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
                                                                         <div class="ms-2 mt-0 mt-sm-2 d-block">
@@ -305,9 +305,9 @@
                                                     </thead>
                                                     <tbody>
                                                         {% for cerr in cerrados %}
-                                                            <tr style="background-color: {{ cerr.tipocontacto.color }};">
+                                                            <tr>
                                                                 <td align="center">{{ cerr.id }}</td>
-                                                                <td align="center">{{ cerr.tipocontacto.nombre }}</td>
+                                                                <td align="center" style="color:{{ cerr.tipocontacto.color }} "><strong>{{ cerr.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
                                                                         <div class="ms-2 mt-0 mt-sm-2 d-block">

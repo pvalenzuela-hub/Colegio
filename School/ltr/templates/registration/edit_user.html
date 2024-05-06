@@ -1,0 +1,79 @@
+{% extends 'components/base.html' %}
+{% load static%}
+
+		{% block styles %}
+		<!-- SELECT2 CSS -->
+		<link href="{% static ''%}assets/plugins/select2/select2.min.css" rel="stylesheet"/>
+		{% endblock styles %}
+
+						{% block body %}
+						<!-- PAGE-HEADER -->
+						<div class="page-header">
+							<div>
+								<h1 class="page-title">Edición de Usuario</h1>
+								<ol class="breadcrumb">
+									<li class="breadcrumb-item"><a href="#">Configuración</a></li>
+									
+								</ol>
+							</div>
+							<div class="ms-auto pageheader-btn">
+								
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-lg-12 col-md-12">
+								<div class="card">
+									<div class="card-header">
+										<h3 class="card-title">Datos usuario a modificar</h3>
+									</div>
+									<div class="card-body">
+                                       
+										<form method="post">
+                                            {% csrf_token %}
+
+                                            {{ form.username.label}}
+                                            {{ form.username }}
+                                            {{ form.first_name.label }}
+                                            {{ form.first_name }}
+                                            {{ form.last_name.label }}
+                                            {{ form.last_name }}
+                                            {{ form.email.label }}
+                                            {{ form.email }}
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    {{ form.is_active}} Indica si el usuario debe ser tratado como activo. Desmarque esta opción en lugar de borrar la cuenta.        
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p>Seleccione el grupo al que pertenece el usuario. </p>
+                                                    <p>{{ form.groups }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button class="btn btn-primary" type="submit">Modifica usuario</button>                                                    
+                                                    <a class="btn btn-secondary" type="button" href="{% url 'list-users' %}">Cancelar</a>    
+                                                </div>
+                                                <p>{{msg}}</p>
+                                            
+                                            </div>
+										</form>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						{% endblock body %}
+					
+		{% block scripts %}
+		<!-- SELECT2 JS -->
+		<script src="{% static ''%}assets/plugins/select2/select2.full.min.js"></script>
+
+		<!-- FORMVALIDATION JS -->
+		<script src="{% static ''%}assets/js/form-validation.js"></script>
+		{% endblock scripts %}
+
+
+

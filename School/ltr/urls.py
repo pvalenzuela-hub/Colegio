@@ -14,11 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.contrib.auth import views as auth_views
 from django.urls import path
+from . views import PasswordsChangeView, password_success, Registrouser
 from . import views
+from django.contrib.auth.views import LoginView, LogoutView
+
 
 urlpatterns = [
-
     path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     #path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
@@ -28,13 +31,41 @@ urlpatterns = [
     path('ajax/cargar-subareas/', views.cargar_subareas, name='ajax_cargar_subareas'),
     path('creaticket', views.creaticket, name = 'crearticket'),
     path('index', views.Index.as_view(),name="index"),
-    path('ticket/index', views.Index.as_view(),name="index"),
+    
+    
     path('', views.Index.as_view(),name="index"),
-    path("ticket/<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
+    path('listacasos', views.Index.as_view(), name='lista-casos'),
+    path("<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
     path('ticket/guardacomentario', views.guardacomentario,name="graba-comentario"),
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),
     path('respuestaapoderado', views.respuesta_apoderado, name = 'respuesta_apoderado'),
     path('enviacorreocolegio', views.envia_primer_correo_colegio, name = 'enviacorreocolegio'),
+#####################################< control de usuarios >###############################################
+    path('login/', LoginView.as_view(template_name='registration/login.html'), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('edituser/<int:pk>', views.edituser, name='edit-user'),
+    path('listausers',views.Listausuarios.as_view(),name='list-users'),
+    path('registro/', views.Registrouser,  name='registro-usuario'),
+    path('password/', PasswordsChangeView.as_view(template_name='registration/change-password.html')),
+    # path('logout', views.Logout, name='logout'),
+    path('password_success', views.password_success, name='password-success'),
+
+    # path('login', LoginView.as_view(), name='login'),
+
+       # Password Reset Process
+   path('reset_password/',
+        auth_views.PasswordResetView.as_view(template_name="accounts/password_reset.html"),
+        name = 'reset_password'),
+   path('accounts/password_reset/done/',
+        auth_views.PasswordResetDoneView.as_view(template_name="accounts/password_reset/password_reset_sent.html"),
+        name = 'password_reset_done'),
+   path('accounts/reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(template_name="accounts/password_reset_form.html"),
+        name = 'password_reset_confirm'),
+   path('accounts/reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_done.html"),
+        name = 'password_reset_complete'),
+# ###############################################################################################    
     
     path('ejemplo', views.ejemplo_correo, name='ejemplo-correo'),
     
@@ -176,7 +207,7 @@ urlpatterns = [
 
     path("lockscreen", views.lockscreen, name='lockscreen'),
 
-    path("login", views.login, name='login'),
+    # path("login", views.login, name='login'),
 
     path("maps", views.maps, name='maps'),
 

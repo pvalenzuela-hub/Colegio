@@ -13,23 +13,23 @@
 					<ul class="side-menu">
 						<li><h3>Main</h3></li>
 						<li class="slide">
-							<a class="side-menu__item"  data-bs-toggle="slide" href="index"><i class="side-menu__icon fe fe-home"></i><span class="side-menu__label">Dashboard</span></a>
+							<a class="side-menu__item"  data-bs-toggle="slide" href="index"><i class="side-menu__icon fe fe-home"></i><span class="side-menu__label">Home</span></a>
 						</li>
-						<li><h3>Widgets & Maps</h3></li>
+						<li><h3>Casos</h3></li>
 						<li>
-							<a class="side-menu__item" href="widgets"><i class="side-menu__icon fe fe-grid"></i><span class="side-menu__label">Widgets</span></a>
+							<a class="side-menu__item" href="{% url 'lista-casos' %}"><i class="side-menu__icon fe fe-grid"></i><span class="side-menu__label">Listado de Casos</span></a>
 						</li>
 						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-globe"></i><span class="side-menu__label">Maps</span><i class="angle fa fa-angle-right"></i></a>
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-globe"></i><span class="side-menu__label">Otros</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
 								<li><a href="maps1" class="slide-item">Leaflet Maps</a></li>
 								<li><a href="maps2" class="slide-item">Mapel Maps</a></li>
 								<li><a href="maps" class="slide-item">Vector Maps</a></li>
 							</ul>
 						</li>
-						<li><h3>Elements</h3></li>
+						<li><h3>reportes</h3></li>
 						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-database"></i><span class="side-menu__label">Components</span><i class="angle fa fa-angle-right"></i></a>
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-database"></i><span class="side-menu__label">Listados</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
 								<li><a href="cards" class="slide-item"> Cards design</a></li>
 								<li><a href="calendar" class="slide-item"> Default calendar</a></li>
@@ -47,7 +47,7 @@
 							</ul>
 						</li>
 						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-package"></i><span class="side-menu__label">Elements</span><i class="angle fa fa-angle-right"></i></a>
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-package"></i><span class="side-menu__label">Consultas</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
 								<li><a href="alerts" class="slide-item"> Alerts</a></li>
 								<li><a href="buttons" class="slide-item"> Buttons</a></li>
@@ -67,27 +67,9 @@
 								<li><a href="thumbnails" class="slide-item"> Thumbnails</a></li>
 							</ul>
 						</li>
+						<li><h3>graficos</h3></li>
 						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-file"></i><span class="side-menu__label">Advanced Elements</span><i class="angle fa fa-angle-right"></i></a>
-							<ul class="slide-menu">
-								<li><a href="mediaobject" class="slide-item"> Media Object</a></li>
-								<li><a href="accordion" class="slide-item"> Accordions</a></li>
-								<li><a href="tabs" class="slide-item"> Tabs</a></li>
-								<li><a href="chart" class="slide-item"> Charts</a></li>
-								<li><a href="modal" class="slide-item"> Modal</a></li>
-								<li><a href="tooltipandpopover" class="slide-item"> Tooltip and popover</a></li>
-								<li><a href="progress" class="slide-item"> Progress</a></li>
-								<li><a href="carousel" class="slide-item"> Carousels</a></li>
-								<li><a href="headers" class="slide-item"> Headers</a></li>
-								<li><a href="footers" class="slide-item"> Footers</a></li>
-								<li><a href="userslist" class="slide-item"> User List</a></li>
-								<li><a href="search" class="slide-item">Search</a></li>
-								<li><a href="cryptocurrencies" class="slide-item"> Crypto-currencies</a></li>
-							</ul>
-						</li>
-						<li><h3>Charts & Tables</h3></li>
-						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-pie-chart"></i><span class="side-menu__label">Charts</span><i class="angle fa fa-angle-right"></i></a>
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-pie-chart"></i><span class="side-menu__label">Gráficos</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
 								<li><a href="chartchartist" class="slide-item">Chart Js</a></li>
 								<li><a href="chartflot" class="slide-item"> Flot Charts</a></li>
@@ -100,15 +82,33 @@
 								<li><a href="chartpie" class="slide-item"> C3 Pie charts</a></li>
 							</ul>
 						</li>
+
+						<li><h3>tablas</h3></li>
 						<li class="slide">
-							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-clipboard"></i><span class="side-menu__label">Tables</span><span class="badge bg-secondary side-badge">2</span></a>
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-file-text"></i><span class="side-menu__label">Matriz</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
-								<li><a href="tables" class="slide-item">Default table</a></li>
-								<li><a href="datatable" class="slide-item"> Data Tables</a></li>
+								<li><a href="personas" class="slide-item"> Personas</a></li>
+								<li><a href="responsablesubareanivel" class="slide-item"> Responsable Sub-Area y Nivel</a></li>
+								<li><a href="responsableciclos" class="slide-item"> Coordinador de Ciclos</a></li>
+								<li><a href="profesorjefe" class="slide-item">Profesor Jefe (Nivel y Curso)</a></li>
+								<li><a href="profesorasignatura" class="slide-item"> Responsable Asignatura</a></li>
+								<li><a href="responsablesuperior" class="slide-item"> Responsable Superior</a></li>
 							</ul>
 						</li>
-						<li><h3>Forms & Icons</h3></li>
 						<li class="slide">
+							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-settings"></i><span class="side-menu__label">Tablas fijas</span><i class="angle fa fa-angle-right"></i></a>
+							<ul class="slide-menu">
+								<li><a href="colegios" class="slide-item">Colegios</a></li>
+								<li><a href="ciclos" class="slide-item">Ciclos</a></li>
+								<li><a href="cursos" class="slide-item"> Cursos</a></li>
+								<li><a href="niveles" class="slide-item"> Niveles</a></li>
+								<li><a href="areas" class="slide-item">Areas</a></li>
+								<li><a href="subareas" class="slide-item"> Sub-Areas</a></li>
+								<li><a href="tiporespuestacolegio" class="slide-item"> Tipo Respuesta Colegio</a></li>
+							</ul>
+						</li>
+						<!-- <li><h3>Forms & Icons</h3></li> -->
+						<!-- <li class="slide">
 							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-file-text"></i><span class="side-menu__label">Forms</span><span class="badge bg-success side-badge">5</span></a>
 							<ul class="slide-menu">
 								<li><a href="formelements" class="slide-item"> Form Elements</a></li>
@@ -132,8 +132,8 @@
 								<li><a href="icons9" class="slide-item">Typicons Icons</a></li>
 								<li><a href="icons10" class="slide-item">Weather Icons</a></li>
 							</ul>
-						</li>
-						<li><h3>Pages</h3></li>
+						</li> -->
+						<!-- <li><h3>Pages</h3></li>
 						<li class="slide">
 							<a class="side-menu__item" data-bs-toggle="slide" href="#"><i class="side-menu__icon fe fe-layers"></i><span class="side-menu__label">Pages</span><i class="angle fa fa-angle-right"></i></a>
 							<ul class="slide-menu">
@@ -209,7 +209,7 @@
 									</ul>
 								</li>
 							</ul>
-						</li>
+						</li> -->
 					</ul>
 				</aside>
 				<!--/APP-SIDEBAR-->
