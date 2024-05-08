@@ -1,6 +1,14 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
+from .utils import Round  # Ajusta la ruta de importación según la ubicación de tu archivo Round
+
+
+from dateutil.relativedelta import relativedelta
+from django.db.models import Sum, Count, Avg, ExpressionWrapper, F, Func, DurationField,IntegerField, FloatField
+
+from django.db.models.functions import ExtractYear, ExtractMonth, Extract
+from django.core.serializers import serialize
 
 from django.contrib.auth.views import PasswordChangeView, PasswordResetDoneView, UserModel
 from .form import UserForm, PasswordChangingForm, CustomCreationForm
@@ -819,8 +827,132 @@ def edituser(request, pk):
             }
             return render(request,template_name,context=data)
 
-    return render(request,template_name, data)    
+    return render(request,template_name, data)   
+
+############################################ < Gráficos > #########################################
+def reporte_directorio(request):
+    return render(request,'chartpie.html')
+
+def chart_casosarea(request):
+    #####################
+    # Reclamos por AREA #
+    #####################
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    #end_date = date.today().replace(day=1) - timedelta(days=1) # 31/07/2023
+    end_date = date.today()
+    
+    results = Ticket.objects.filter(
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_date
+        ).values('subarea__area__nombre').annotate(
+            total=Count('id')
+            ).order_by('subarea__area__nombre')
+ 
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['total'])
+            names.append(dato['subarea__area__nombre'])
+
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'title': {
+                'text': ''
+            },
+            'tooltip': {
+                'trigger': 'item'
+            },
+            'legend': {
+                'orient': 'vertical',
+                'left': 'left'
+            },
+            'series': [
+                {
+                    
+                    'type': 'pie',
+                    'radius': '80%',
+                    'data': [{'value': value, 'name': name} for value, name in zip(values, names)]
+                }
+            ]
+        }                    
+        return JsonResponse(chart_data)
+
+
+def chart_tpromedioprimrespuesta(request):
+    #####################################
+    # Tiempo promedio primera respuesta #
+    #####################################
+    
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+    
+    # recoger los promedios de los tiempos de respuesta para los casos que hayan tenido primerarespuesta
+    results = Ticket.objects.filter(
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_date,
+        fechaprimerarespuesta__isnull=False
+        ).annotate(
+            response_time=ExpressionWrapper(
+                F('fechaprimerarespuesta') - F('fechaprimerenvio'),
+                output_field=DurationField()
+            )).values(
+                'subarea__area__nombre').annotate(
+                    average_response_time=Avg('response_time')).order_by('subarea__area__nombre')
+
+    # Convertir duración promedio a días en Python
+    for result in results:
+        result['average_response_time_days'] = round(result['average_response_time'].total_seconds() / 86400,1)
+
+    #print (len(results))
+    chart_data = {}
+
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['average_response_time_days'])
+            names.append(dato['subarea__area__nombre'])
+
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'xAxis': {
+                'type': 'value',
+                'boundaryGap': '[0.8, 0]'
+                },
+            'yAxis': {
+                'type': 'category',
+                'data': names
+                },
+            'label': {
+                'show': 'true',
+                'position': 'inside'
+                },
+            'series': [{ 'data': values, 'type': 'bar' }]
+        }
+        
+    return JsonResponse(chart_data)
+
+
 ############################################ < xanex > ############################################
+
+def prueba_dif_dias(request):
+    results = Ticket.objects.filter(fechaprimerarespuesta__isnull=False).order_by('subarea')
+
+    for tic in results:
+        print('fechaprimerenvio:', tic.fechaprimerenvio)
+        print('fechaprimerarespuesta:', tic.fechaprimerarespuesta)
+        # Calcula la diferencia de tiempo entre fechaprimerarespuesta y fechaprimerenvio
+        diferencia_tiempo = tic.fechaprimerenvio - tic.fechaprimerarespuesta
+        # Convierte la diferencia de tiempo a días (como un número entero)
+        diferencia_dias = diferencia_tiempo.days
+        print('Diferencia en días:', diferencia_dias)
+    
+    return render(request,'index.html')
 
 
 def about(request):

@@ -40,9 +40,15 @@ urlpatterns = [
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),
     path('respuestaapoderado', views.respuesta_apoderado, name = 'respuesta_apoderado'),
     path('enviacorreocolegio', views.envia_primer_correo_colegio, name = 'enviacorreocolegio'),
+####################################### graficos #########################################################
+    path('api/casosporarea', views.chart_casosarea, name = 'chart1'),
+    path('api/tiempopromedio', views.chart_tpromedioprimrespuesta, name = 'chart2'),
+    path('reportedirectorio', views.reporte_directorio, name = 'reportedirectorio'),
+# ########################################################################################################    
 #####################################< control de usuarios >###############################################
     path('login/', LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('accounts/logout/', LogoutView.as_view(), name='logout'),
     path('edituser/<int:pk>', views.edituser, name='edit-user'),
     path('listausers',views.Listausuarios.as_view(),name='list-users'),
     path('registro/', views.Registrouser,  name='registro-usuario'),
@@ -68,7 +74,7 @@ urlpatterns = [
 # ###############################################################################################    
     
     path('ejemplo', views.ejemplo_correo, name='ejemplo-correo'),
-    
+    path('difdias', views.prueba_dif_dias, name='prueba_dif_dias'),
 ###################################################< Zanex >######################################
 
     # path("", views.Index, name='index'),

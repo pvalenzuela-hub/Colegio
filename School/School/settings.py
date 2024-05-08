@@ -90,7 +90,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'pythonda_bridge',
         'USER': 'pythonda_bridgecomms',
-        'PASSWORD': 'Colegio2024',
+        'PASSWORD': "?%eB$(8PtZ-,",
         'HOST': '131.72.236.194',
         'PORT': '3306',
         'OPTIONS': {
@@ -98,6 +98,20 @@ DATABASES = {
             }
     },
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'bridgecomms$default',
+#         'USER': 'bridgecomms',
+#         'PASSWORD': 'Colegio2024',
+#         'HOST': 'bridgecomms.mysql.pythonanywhere-services.com',
+#         'PORT': 3306,
+#         'OPTIONS': {
+#             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+#             }
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

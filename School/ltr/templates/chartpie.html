@@ -10,23 +10,11 @@
 					<!-- PAGE-HEADER -->
 					<div class="page-header">
 						<div>
-							<h1 class="page-title">C3-Pie Charts</h1>
+							<h1 class="page-title">Directorio</h1>
 							<ol class="breadcrumb">
 								<li class="breadcrumb-item"><a href="#">Charts</a></li>
-								<li class="breadcrumb-item active" aria-current="page">C3-Pie Charts</li>
+								<li class="breadcrumb-item active" aria-current="page">Reporte Directorio</li>
 							</ol>
-						</div>
-						<div class="ms-auto pageheader-btn">
-							<a href="#" class="btn btn-primary btn-icon text-white me-2">
-								<span>
-									<i class="fe fe-plus"></i>
-								</span> Add Account
-							</a>
-							<a href="#" class="btn btn-success btn-icon text-white">
-								<span>
-									<i class="fe fe-log-in"></i>
-								</span> Export
-							</a>
 						</div>
 					</div>
 					<!-- PAGE-HEADER END -->
@@ -36,23 +24,23 @@
 						<div class="col-lg-6 col-md-12">
 							<div class="card">
 								<div class="card-header">
-									<h3 class="card-title">Pie Chart</h3>
+									<h3 class="card-title">Reclamos por Area</h3>
 								</div>
 								<div class="card-body">
-									<div id="chart-pie" class="chartsh"></div>
+									<div id="chart-pie1" class="chartsh"></div>
 								</div>
 							</div>
 						</div>
 						<div class="col-lg-6 col-md-12">
 							<div class="card">
 								<div class="card-header">
-									<h3 class="card-title">Pie Chart with Multiple colors</h3>
+									<h3 class="card-title">Tiempo Promedio : Primera Respuesta por Area</h3>
 								</div>
 								<div class="card-body">
-									<div id="chart-pie2" class="chartsh"></div>
+									<div id="chart-bar-rotated" class="chartsh"></div>
 								</div>
 							</div>
-						</div>
+						</div><!-- COL-END -->
 					</div>
 					<!-- ROW-1 CLOSE -->
 
@@ -87,7 +75,12 @@
 		<script src="{% static ''%}assets/plugins/charts-c3/d3.v5.min.js"></script>
 		<script src="{% static ''%}assets/plugins/charts-c3/c3-chart.js"></script>
 
-		<!-- C3-PIE CHART JS -->
-		<script src="{% static ''%}assets/js/charts.js"></script>
+		<!-- C3-PIE CHART JS
+		<script src="{% static ''%}assets/js/charts.js"></script> -->
+
+		 <!--- Apache ECharts -->
+		 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+		 <!--- Custom JS -->
+		 <script src="{% static 'js/reporte-directorio.js' %}"></script>
 		{% endblock scripts %}
 
