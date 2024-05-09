@@ -881,7 +881,7 @@ def chart_casosarea(request):
         return JsonResponse(chart_data)
 
 
-def chart_tpromedioprimrespuesta(request):
+def chart_tpromedioprimrespuesta(_request):
     #####################################
     # Tiempo promedio primera respuesta #
     #####################################
@@ -920,6 +920,10 @@ def chart_tpromedioprimrespuesta(request):
 
         # Crear el objeto de gráfico en el formato esperado por eCharts
         chart_data = {
+            'legend': {
+                'orient': 'horizontal',
+                'left': 'center'
+                },
             'xAxis': {
                 'type': 'value',
                 'boundaryGap': '[0.8, 0]'
@@ -937,6 +941,82 @@ def chart_tpromedioprimrespuesta(request):
         
     return JsonResponse(chart_data)
 
+def chart_casostipocontacto(_request):
+    #####################################
+    # Casos por AñoMes y Tipo Contacto  #
+    #####################################
+    
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+
+    results = Ticket.objects.filter(
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_date
+    ).annotate(
+        agno=ExtractYear('fechacreacion'),  # Extrae el año de la fecha de creación
+        mes=ExtractMonth('fechacreacion'),  # Extrae el mes de la fecha de creación
+        tipo=F('tipocontacto__nombre')  # tipocontacto
+    ).values(
+        'agno',
+        'mes',
+        'tipo'  # Agrupar por año, mes y tipo de contacto
+    ).annotate(
+        count=Count('id')  # Contar el número de tickets por grupo
+    ).order_by('agno', 'mes', 'tipo')  # Ordenar los resultados por año, mes y tipo de contacto    
+
+    # Organizar los datos
+    periodos = sorted(set(f"{dato['mes']:02}/{dato['agno']}" for dato in results))
+    tipos = sorted(set(dato['tipo'] for dato in results))
+
+    print ('periodos:', periodos)
+    print ('tipos', tipos)
+
+    # Crear una estructura para los datos
+    data = {tipo: [0] * len(periodos) for tipo in tipos}
+    periodo_indices = {periodo: i for i, periodo in enumerate(periodos)}
+
+    print ('estructura data:', data)
+    print ('estructura periodo_indices:', periodo_indices)
+
+    # Llenar la estructura con los conteos
+    for dato in results:
+        periodo = f"{dato['mes']:02}/{dato['agno']}"
+        tipo = dato['tipo']
+        index = periodo_indices[periodo]
+        data[tipo][index] = dato['count']
+
+    # Crear la estructura JSON
+    chart_data = {}
+    if (len(results) > 0):
+        chart_data = {
+            "legend": {
+                "data": tipos
+            },
+            'grid': {
+                'left': '3%',
+                'right': '4%',
+                'bottom': '3%',
+                'containLabel': 'true'
+            },
+            'xAxis': {
+                'type': 'category',
+                'boundaryGap': 'false',
+                'data': periodos
+            },
+            'yAxis': {
+                    'type': 'value'
+            },
+            "series": [
+                {
+                    "name": tipo,
+                    "type": "line",
+                    "data": counts
+                } for tipo, counts in data.items()
+            ]
+        }
+            
+    return JsonResponse(chart_data)
 
 ############################################ < xanex > ############################################
 

@@ -43,6 +43,7 @@ urlpatterns = [
 ####################################### graficos #########################################################
     path('api/casosporarea', views.chart_casosarea, name = 'chart1'),
     path('api/tiempopromedio', views.chart_tpromedioprimrespuesta, name = 'chart2'),
+    path('api/casotipocontacto', views.chart_casostipocontacto, name = 'chart3'),
     path('reportedirectorio', views.reporte_directorio, name = 'reportedirectorio'),
 # ########################################################################################################    
 #####################################< control de usuarios >###############################################
