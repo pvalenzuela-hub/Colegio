@@ -34,7 +34,7 @@ urlpatterns = [
     
     
     path('', views.Index.as_view(),name="index"),
-    path('listacasos', views.Index.as_view(), name='lista-casos'),
+    path('listacasos', views.Listadocasos.as_view(), name='lista-casos'),
     path("<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
     path('ticket/guardacomentario', views.guardacomentario,name="graba-comentario"),
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),

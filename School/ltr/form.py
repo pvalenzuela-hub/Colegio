@@ -36,7 +36,7 @@ class PasswordChangingForm(PasswordChangeForm):
         fields = ('old_password', 'new_password1', 'new_password2')
     
 class CustomCreationForm(UserCreationForm):
-    username = forms.CharField(label='Usuario',widget=forms.TextInput(attrs={'class': 'form-control'}))
+    username = forms.CharField(label='RUT',widget=forms.TextInput(attrs={'class': 'form-control'}))
   
 
     class Meta:

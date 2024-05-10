@@ -113,43 +113,25 @@ def obtener_destinatarios_ticket(ticket_id):
     responsablesuperior = ResponsableSuperior.objects.filter(
         subarea=ticket.subarea)
 
+    todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
     if subarea.profejefe:
-        profesorjefe = ProfesorJefe.objects.filter(
-            nivel=ticket.nivel, curso=ticket.curso)
-        # Unir todos los responsables en una lista
-        if asignatura.id > 1:
-            todos_responsables = list(responsableprofesor) + list(responsablessubareanivel) + list(
-                coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
-        else:
-            todos_responsables = list(responsablessubareanivel) + list(
-                coordinadorciclo) + list(responsablesuperior) + list(profesorjefe)
-    else:
-        # Unir todos los responsables en una lista
-        if asignatura.id > 1:
-            todos_responsables = list(responsableprofesor) + list(
-                responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
-        else:
-            todos_responsables = list(
-                responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
+        profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
+        todos_responsables += list(profesorjefe)
+    if asignatura.id > 1:
+        todos_responsables += list(responsableprofesor)
 
-        # Obtener todos los destinatarios sin duplicados
-    
 
     lista_destinatarios = obtener_destinatarios_unicos(todos_responsables)
+    persona = None  # Asegurarse de que persona está definida
 
-   
     if asignatura.id > 1:
         # Primer Destinatario es el Profesor
         for responsable in responsableprofesor:
             persona = get_object_or_404(Personas, id=responsable.persona.id)
-            # destinatario_correo = persona.nombre
-            # cargo = persona.cargo
     else:
         # Si Destinatrario correo no ha sido asignado antes
         for responsable in responsablessubareanivel:
             persona = get_object_or_404(Personas, id=responsable.persona.id)
-            # destinatario_correo = persona.nombre
-            # cargo = persona.cargo
 
     return (lista_destinatarios, persona)
 
@@ -186,7 +168,6 @@ def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunt
         print(f"Error: {e}")
         return False
         
-
 
 def envia_primer_correo_colegio(request):
     ###########################################################
@@ -643,6 +624,37 @@ def index(request):
     return render(request, "index.html")
 
 class Index(LoginRequiredMixin,DetailView):
+    colegio_id = 1  # ID del Colegio 1
+    template_name = 'index.html'
+    def get(self, request, *args, **kwargs):
+        colegio_id = 1  # ID del Colegio 1
+
+        nuevos = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id = 1).count()
+
+        colegio1 = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id = 2).count()
+
+        conversacioncolegio = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id = 3).count()
+
+        conversacionapoderado = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id = 4).count()
+
+        cerrado = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id = 5).count()
+
+
+        contexto = {
+            'nuevos': nuevos,
+            'colegio1': colegio1,
+            'conversacioncolegio': conversacioncolegio,
+            'conversacionapoderado': conversacionapoderado,
+            'cerrado': cerrado
+        }
+        return render(request, self.template_name, contexto)
+
+class Listadocasos(LoginRequiredMixin,DetailView):
 
     template_name = 'mainticket.html'
 
@@ -778,7 +790,7 @@ class Listausuarios(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        return self.model.objects.exclude(username = 'root').order_by('first_name')
+        return self.model.objects.exclude(username = 'bridge').order_by('first_name')
 
     def get(self, request, *args, **kwargs):
 
