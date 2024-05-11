@@ -1,6 +1,6 @@
 const getOptionChart1 = async () => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/casosporarea");
+    const response = await fetch("/api/casosporarea");
     return await response.json();
 
   } catch (ex) {
@@ -10,7 +10,7 @@ const getOptionChart1 = async () => {
 
 const getOptionChart2 = async () => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/tiempopromedio");
+    const response = await fetch("/api/tiempopromedio");
     return await response.json();
 
   } catch (ex) {
@@ -20,7 +20,7 @@ const getOptionChart2 = async () => {
 
 const getOptionChart3 = async () => {
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/casotipocontacto");
+    const response = await fetch("/api/casotipocontacto");
     return await response.json();
 
   } catch (ex) {
@@ -29,9 +29,9 @@ const getOptionChart3 = async () => {
 };
 
 const initChart = async () => {
-    const myChart1 = echarts.init(document.getElementById("chart-pie1"));
-    const myChart2 = echarts.init(document.getElementById("chart-bar-rotated"));
-    const myChart3 = echarts.init(document.getElementById("line3"));
+    const myChart1 = echarts.init(document.getElementById("chart1"));
+    const myChart2 = echarts.init(document.getElementById("chart2"));
+    const myChart3 = echarts.init(document.getElementById("chart3"));
 
     myChart1.setOption(await getOptionChart1());
     myChart2.setOption(await getOptionChart2());

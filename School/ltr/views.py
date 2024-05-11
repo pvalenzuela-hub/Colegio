@@ -1,8 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
-from .utils import Round  # Ajusta la ruta de importación según la ubicación de tu archivo Round
-
+from django.utils import timezone
 
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum, Count, Avg, ExpressionWrapper, F, Func, DurationField,IntegerField, FloatField
@@ -761,21 +760,18 @@ def guardacomentario(request):
 
     if crear_tarea == '2':
         # llamar a la vistra para crear tarea
-        return render(request, 'ltr/index.html')
+        return render(request, 'index.html')
 
     if activar_correo == '3':
         # grabar dato que permite activar envio de correos
-        return render(request, 'ltr/index.html')
+        return render(request, 'index.html')
 
     return redirect(f'/{idticket_str}')
 
 @login_required
 def zanex(request):
-    return render(request, 'ltr/index.html')
+    return render(request, 'index.html')
 
-
-def ejemplo_correo(request):
-    return render(request, 'ejemplo_correo.html')
 
 def Logout(_request):
     return render(_request,'registration/login.html')
@@ -851,12 +847,12 @@ def chart_casosarea(request):
     #####################
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
-    #end_date = date.today().replace(day=1) - timedelta(days=1) # 31/07/2023
     end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
     
     results = Ticket.objects.filter(
         fechacreacion__gte=start_date,
-        fechacreacion__lte=end_date
+        fechacreacion__lte=end_of_day
         ).values('subarea__area__nombre').annotate(
             total=Count('id')
             ).order_by('subarea__area__nombre')
@@ -901,11 +897,12 @@ def chart_tpromedioprimrespuesta(_request):
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
     
     # recoger los promedios de los tiempos de respuesta para los casos que hayan tenido primerarespuesta
     results = Ticket.objects.filter(
         fechacreacion__gte=start_date,
-        fechacreacion__lte=end_date,
+        fechacreacion__lte=end_of_day,
         fechaprimerarespuesta__isnull=False
         ).annotate(
             response_time=ExpressionWrapper(
@@ -960,11 +957,17 @@ def chart_casostipocontacto(_request):
     
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
+    # start_of_day = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+    
+
     end_date = date.today()
+    # end_of_day = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
+    end_of_day = end_date + timedelta(days=1)
+
 
     results = Ticket.objects.filter(
-        fechacreacion__gte=start_date,
-        fechacreacion__lte=end_date
+        fechacreacion__gte = start_date,
+        fechacreacion__lte = end_of_day
     ).annotate(
         agno=ExtractYear('fechacreacion'),  # Extrae el año de la fecha de creación
         mes=ExtractMonth('fechacreacion'),  # Extrae el mes de la fecha de creación
@@ -981,15 +984,10 @@ def chart_casostipocontacto(_request):
     periodos = sorted(set(f"{dato['mes']:02}/{dato['agno']}" for dato in results))
     tipos = sorted(set(dato['tipo'] for dato in results))
 
-    print ('periodos:', periodos)
-    print ('tipos', tipos)
-
     # Crear una estructura para los datos
     data = {tipo: [0] * len(periodos) for tipo in tipos}
     periodo_indices = {periodo: i for i, periodo in enumerate(periodos)}
 
-    print ('estructura data:', data)
-    print ('estructura periodo_indices:', periodo_indices)
 
     # Llenar la estructura con los conteos
     for dato in results:
@@ -1032,27 +1030,12 @@ def chart_casostipocontacto(_request):
 
 ############################################ < xanex > ############################################
 
-def prueba_dif_dias(request):
-    results = Ticket.objects.filter(fechaprimerarespuesta__isnull=False).order_by('subarea')
-
-    for tic in results:
-        print('fechaprimerenvio:', tic.fechaprimerenvio)
-        print('fechaprimerarespuesta:', tic.fechaprimerarespuesta)
-        # Calcula la diferencia de tiempo entre fechaprimerarespuesta y fechaprimerenvio
-        diferencia_tiempo = tic.fechaprimerenvio - tic.fechaprimerarespuesta
-        # Convierte la diferencia de tiempo a días (como un número entero)
-        diferencia_dias = diferencia_tiempo.days
-        print('Diferencia en días:', diferencia_dias)
-    
-    return render(request,'index.html')
-
-
 def about(request):
-    return render(request, 'ltr/about.html')
+    return render(request, 'about.html')
 
 
 def accordion(request):
-    return render(request, 'ltr/accordion.html')
+    return render(request, 'accordion.html')
 
 
 def alerts(request):
@@ -1060,27 +1043,27 @@ def alerts(request):
 
 
 def avatarradius(request):
-    return render(request, 'ltr/avatarradius.html')
+    return render(request, 'avatarradius.html')
 
 
 def avatarround(request):
-    return render(request, 'ltr/avatarround.html')
+    return render(request, 'avatarround.html')
 
 
 def avatarsquare(request):
-    return render(request, 'ltr/avatarsquare.html')
+    return render(request, 'avatarsquare.html')
 
 
 def badge(request):
-    return render(request, 'ltr/badge.html')
+    return render(request, 'badge.html')
 
 
 def blog(request):
-    return render(request, 'ltr/blog.html')
+    return render(request, 'blog.html')
 
 
 def breadcrumbs(request):
-    return render(request, 'ltr/breadcrumbs.html')
+    return render(request, 'breadcrumbs.html')
 
 
 def buttons(request):
@@ -1088,23 +1071,23 @@ def buttons(request):
 
 
 def calendar(request):
-    return render(request, 'ltr/calendar.html')
+    return render(request, 'calendar.html')
 
 
 def calendar2(request):
-    return render(request, 'ltr/calendar2.html')
+    return render(request, 'calendar2.html')
 
 
 def cards(request):
-    return render(request, 'ltr/cards.html')
+    return render(request, 'cards.html')
 
 
 def carousel(request):
-    return render(request, 'ltr/carousel.html')
+    return render(request, 'carousel.html')
 
 
 def cart(request):
-    return render(request, 'ltr/cart.html')
+    return render(request, 'cart.html')
 
 
 def chart(request):
@@ -1156,296 +1139,295 @@ def checkout(request):
 
 
 def colors(request):
-    return render(request, 'ltr/colors.html')
+    return render(request, 'colors.html')
 
 
 def construction(request):
-    return render(request, 'ltr/construction.html')
+    return render(request, 'construction.html')
 
 
 def counters(request):
-    return render(request, 'ltr/counters.html')
+    return render(request, 'counters.html')
 
 
 def cryptocurrencies(request):
-    return render(request, 'ltr/cryptocurrencies.html')
+    return render(request, 'cryptocurrencies.html')
 
 
 def datatable(request):
-    return render(request, 'ltr/datatable.html')
+    return render(request, 'datatable.html')
 
 
 def dropdown(request):
-    return render(request, 'ltr/dropdown.html')
+    return render(request, 'dropdown.html')
 
 
 def editprofile(request):
-    return render(request, 'ltr/editprofile.html')
+    return render(request, 'editprofile.html')
 
 
 def email(request):
-    return render(request, 'ltr/email.html')
+    return render(request, 'email.html')
 
 
 def emailservices(request):
-    return render(request, 'ltr/emailservices.html')
+    return render(request, 'emailservices.html')
 
 
 def empty(request):
-    return render(request, 'ltr/empty.html')
+    return render(request, 'empty.html')
 
 
 def error400(request):
-    return render(request, 'ltr/error400.html')
+    return render(request, 'error400.html')
 
 
 def error401(request):
-    return render(request, 'ltr/error401.html')
+    return render(request, 'error401.html')
 
 
 def error403(request):
-    return render(request, 'ltr/error403.html')
+    return render(request, 'error403.html')
 
 
 def error404(request):
-    return render(request, 'ltr/error404.html')
+    return render(request, 'error404.html')
 
 
 def error500(request):
-    return render(request, 'ltr/error500.html')
+    return render(request, 'error500.html')
 
 
 def error503(request):
-    return render(request, 'ltr/error503.html')
+    return render(request, 'error503.html')
 
 
 def faq(request):
-    return render(request, 'ltr/faq.html')
-
+    return render(request, 'faq.html')
 
 def footers(request):
-    return render(request, 'ltr/footers.html')
+    return render(request, 'footers.html')
 
 
 def forgotpassword(request):
-    return render(request, 'ltr/forgotpassword.html')
+    return render(request, 'forgotpassword.html')
 
 
 def formadvanced(request):
-    return render(request, 'ltr/formadvanced.html')
+    return render(request, 'formadvanced.html')
 
 
 def formelements(request):
-    return render(request, 'ltr/formelements.html')
+    return render(request, 'formelements.html')
 
 
 def formvalidation(request):
-    return render(request, 'ltr/formvalidation.html')
+    return render(request, 'formvalidation.html')
 
 
 def formwizard(request):
-    return render(request, 'ltr/formwizard.html')
+    return render(request, 'formwizard.html')
 
 
 def gallery(request):
-    return render(request, 'ltr/gallery.html')
+    return render(request, 'gallery.html')
 
 
 def headers(request):
-    return render(request, 'ltr/headers.html')
+    return render(request, 'headers.html')
 
 
 def icons(request):
-    return render(request, 'ltr/icons.html')
+    return render(request, 'icons.html')
 
 
 def icons2(request):
-    return render(request, 'ltr/icons2.html')
+    return render(request, 'icons2.html')
 
 
 def icons3(request):
-    return render(request, 'ltr/icons3.html')
+    return render(request, 'icons3.html')
 
 
 def icons4(request):
-    return render(request, 'ltr/icons4.html')
+    return render(request, 'icons4.html')
 
 
 def icons5(request):
-    return render(request, 'ltr/icons5.html')
+    return render(request, 'icons5.html')
 
 
 def icons6(request):
-    return render(request, 'ltr/icons6.html')
+    return render(request, 'icons6.html')
 
 
 def icons7(request):
-    return render(request, 'ltr/icons7.html')
+    return render(request, 'icons7.html')
 
 
 def icons8(request):
-    return render(request, 'ltr/icons8.html')
+    return render(request, 'icons8.html')
 
 
 def icons9(request):
-    return render(request, 'ltr/icons9.html')
+    return render(request, 'icons9.html')
 
 
 def icons10(request):
-    return render(request, 'ltr/icons10.html')
+    return render(request, 'icons10.html')
 
 
 def invoice(request):
-    return render(request, 'ltr/invoice.html')
+    return render(request, 'invoice.html')
 
 
 def listas(request):
-    return render(request, 'ltr/list.html')
+    return render(request, 'list.html')
 
 
 def loaders(request):
-    return render(request, 'ltr/loaders.html')
+    return render(request, 'loaders.html')
 
 
 def lockscreen(request):
-    return render(request, 'ltr/lockscreen.html')
+    return render(request, 'lockscreen.html')
 
 
 # def login(request):
-#     return render(request, 'ltr/login.html')
+#     return render(request, 'login.html')
 
 
 def maps(request):
-    return render(request, 'ltr/maps.html')
+    return render(request, 'maps.html')
 
 
 def maps1(request):
-    return render(request, 'ltr/maps1.html')
+    return render(request, 'maps1.html')
 
 
 def maps2(request):
-    return render(request, 'ltr/maps2.html')
+    return render(request, 'maps2.html')
 
 
 def mediaobject(request):
-    return render(request, 'ltr/mediaobject.html')
+    return render(request, 'mediaobject.html')
 
 
 def modal(request):
-    return render(request, 'ltr/modal.html')
+    return render(request, 'modal.html')
 
 
 def navigation(request):
-    return render(request, 'ltr/navigation.html')
+    return render(request, 'navigation.html')
 
 
 def notify(request):
-    return render(request, 'ltr/notify.html')
+    return render(request, 'notify.html')
 
 
 def pagination(request):
-    return render(request, 'ltr/pagination.html')
+    return render(request, 'pagination.html')
 
 
 def panels(request):
-    return render(request, 'ltr/panels.html')
+    return render(request, 'panels.html')
 
 
 def pricing(request):
-    return render(request, 'ltr/pricing.html')
+    return render(request, 'pricing.html')
 
 
 def profile(request):
-    return render(request, 'ltr/profile.html')
+    return render(request, 'profile.html')
 
 
 def progress(request):
-    return render(request, 'ltr/progress.html')
+    return render(request, 'progress.html')
 
 
 def rangeslider(request):
-    return render(request, 'ltr/rangeslider.html')
+    return render(request, 'rangeslider.html')
 
 
 def rating(request):
-    return render(request, 'ltr/rating.html')
+    return render(request, 'rating.html')
 
 
 def register(request):
-    return render(request, 'ltr/register.html')
+    return render(request, 'register.html')
 
 
 def scroll(request):
-    return render(request, 'ltr/scroll.html')
+    return render(request, 'scroll.html')
 
 
 def search(request):
-    return render(request, 'ltr/search.html')
+    return render(request, 'search.html')
 
 
 def services(request):
-    return render(request, 'ltr/services.html')
+    return render(request, 'services.html')
 
 
 def shop(request):
-    return render(request, 'ltr/shop.html')
+    return render(request, 'shop.html')
 
 
 def shopdescription(request):
-    return render(request, 'ltr/shopdescription.html')
+    return render(request, 'shopdescription.html')
 
 
 def sweetalert(request):
-    return render(request, 'ltr/sweetalert.html')
+    return render(request, 'sweetalert.html')
 
 
 def tables(request):
-    return render(request, 'ltr/tables.html')
+    return render(request, 'tables.html')
 
 
 def tabs(request):
-    return render(request, 'ltr/tabs.html')
+    return render(request, 'tabs.html')
 
 
 def tags(request):
-    return render(request, 'ltr/tags.html')
+    return render(request, 'tags.html')
 
 
 def terms(request):
-    return render(request, 'ltr/terms.html')
+    return render(request, 'terms.html')
 
 
 def thumbnails(request):
-    return render(request, 'ltr/thumbnails.html')
+    return render(request, 'thumbnails.html')
 
 
 def timeline(request):
-    return render(request, 'ltr/timeline.html')
+    return render(request, 'timeline.html')
 
 
 def tooltipandpopover(request):
-    return render(request, 'ltr/tooltipandpopover.html')
+    return render(request, 'tooltipandpopover.html')
 
 
 def treeview(request):
-    return render(request, 'ltr/treeview.html')
+    return render(request, 'treeview.html')
 
 
 def typography(request):
-    return render(request, 'ltr/typography.html')
+    return render(request, 'typography.html')
 
 
 def userslist(request):
-    return render(request, 'ltr/userslist.html')
+    return render(request, 'userslist.html')
 
 
 def widgets(request):
-    return render(request, 'ltr/widgets.html')
+    return render(request, 'widgets.html')
 
 
 def wishlist(request):
-    return render(request, 'ltr/wishlist.html')
+    return render(request, 'wishlist.html')
 
 
 def wysiwyag(request):
-    return render(request, 'ltr/wysiwyag.html')
+    return render(request, 'wysiwyag.html')

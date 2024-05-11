@@ -72,10 +72,12 @@ urlpatterns = [
    path('accounts/reset/done/',
         auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_done.html"),
         name = 'password_reset_complete'),
-# ###############################################################################################    
-    
-    path('ejemplo', views.ejemplo_correo, name='ejemplo-correo'),
-    path('difdias', views.prueba_dif_dias, name='prueba_dif_dias'),
+# #####< PRUEBAS >##################################################################################    
+
+
+##############< TABLAS > ###########################################################################
+
+   
 ###################################################< Zanex >######################################
 
     # path("", views.Index, name='index'),
