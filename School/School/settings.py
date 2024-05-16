@@ -102,10 +102,10 @@ DATABASES = {
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'bridgecomms$default',
-#         'USER': 'bridgecomms',
-#         'PASSWORD': 'Colegio2024',
-#         'HOST': 'bridgecomms.mysql.pythonanywhere-services.com',
+#         'NAME': 'xxxxxxxxxx$default',
+#         'USER': 'xxxxxxx',
+#         'PASSWORD': 'xxxxxxx',
+#         'HOST': 'xxxxxxxx.mysql.pythonanywhere-services.com',
 #         'PORT': 3306,
 #         'OPTIONS': {
 #             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -162,8 +162,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'bienestar@colegiolaabadia.cl'
-EMAIL_HOST_PASSWORD = 'bridge2024'
+EMAIL_HOST_USER = 'xxxxxxx@xxxxxx.com'
+EMAIL_HOST_PASSWORD = 'xxxxxxx'
 
 # LOGGING = {
 #     'version': 1,
