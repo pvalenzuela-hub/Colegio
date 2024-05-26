@@ -102,10 +102,10 @@ DATABASES = {
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'bridgecomms$default',
-#         'USER': 'bridgecomms',
-#         'PASSWORD': 'Colegio2024',
-#         'HOST': 'bridgecomms.mysql.pythonanywhere-services.com',
+#         'NAME': 'xxxxxxxxxx$default',
+#         'USER': 'xxxxxxx',
+#         'PASSWORD': 'xxxxxxx',
+#         'HOST': 'xxxxxxxx.mysql.pythonanywhere-services.com',
 #         'PORT': 3306,
 #         'OPTIONS': {
 #             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
