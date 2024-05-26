@@ -1,0 +1,106 @@
+{% extends 'components/base.html' %}
+{% load static%}
+
+{% block styles %}
+<!-- Bootstrap -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"  integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+<!-- datatable.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/2.0.7/css/dataTables.bootstrap5.css">
+<!-- CUSTOM CSS-->
+<link rel="stylesheet" href="{% static 'css/tabla_niveles.css' %}">
+
+{% endblock styles %}
+
+{% block body %}
+<!-- PAGE-HEADER -->
+<div class="container">
+    <h1 class="page-title">{{ encabezado }}</h1>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="#">{{ menu }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ submenu }}</li>
+        <div class="ms-auto pageheader-btn">
+            <a href="{% url 'crea-nivel' %}" class="btn btn-primary btn-icon text-white me-2">
+                <span>
+                    <i class="fe fe-plus"></i>
+                </span> Agregar Nivel
+            </a>
+        </div>
+    </ol>
+    <div class="row">
+        <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12">
+            <div class="table-responsive">
+                <table id="datatable-niveles" class="table">
+                    <!-- <table id="datatable-niveles" class="table" data-ordering="false"></table> -->
+                    <caption>
+                        {{ titulo }}
+                    </caption>
+                    <thead><tr>
+                        <th class="centered">Nombre</th>
+                        <th class="centered">Ciclo</th>
+                        <th class="centered">Orden</th>
+                        <th>opciones</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in niveles %}
+                        <tr>
+                            <td>{{ p.nombre }}</td>
+                            <td>{{ p.ciclo.nombre }}</td>
+                            <td>{{ p.orden }}</td>
+                            <td align="center" class="">
+                                <a class="btn btn-sm btn-primary" href="{% url 'editar-nivel' p.id %}"><i class="fa fa-pencil-square"></i></a>
+                                <a class="btn btn-sm btn-danger" href="{% url 'eliminar-nivel' p.id %}"><i class="fa fa-trash"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <p style="background-color:red;color: white; ">{{msg}}</p>
+                    
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock body %}
+{% block scripts %}
+<!--  Bootstrap 5 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+<!-- datatable.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/2.0.7/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/2.0.7/js/dataTables.bootstrap5.js"></script>
+<!-- CUSTOM JS -->
+<!-- <script src="{% static 'js/tabla_niveles.js' %}" ></script> -->
+
+<script>
+   $(document).ready( function () {
+    var table = $('#datatable-niveles').DataTable( {
+        paging: true,
+        order: [],
+        pageLength: 4,
+        language: {
+            "search": "Buscar:",
+            "infoEmpty": "Mostrando 0 to 0 of 0 Entradas",
+            "info": "Mostrando _START_ a _END_ de _TOTAL_ Entradas",
+            "infoFiltered": "(Filtrado de _MAX_ total entradas)",
+            "lengthMenu": "Mostrar _MENU_ Entradas",
+            "loadingRecords": "Cargando...",
+            "processing": "Procesando...",
+            "paginate": {
+                "first": "Primero",
+                "last": "Ultimo",
+                "next": "Siguiente",
+                "previous": "Anterior"
+                },
+            }
+        });
+    } );
+
+  
+</script>
+{% endblock scripts %}

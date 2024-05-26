@@ -10,7 +10,7 @@ from django.db.models.functions import ExtractYear, ExtractMonth, Extract
 from django.core.serializers import serialize
 
 from django.contrib.auth.views import PasswordChangeView, PasswordResetDoneView, UserModel
-from .form import UserForm, PasswordChangingForm, CustomCreationForm
+from .form import UserForm, PasswordChangingForm, CustomCreationForm, PersonasForm, CiclosForm, ColegiosForm, NivelesForm, CursosForm,AreasForm, SubareasForm, TiporespuestacolegioForm, ResponsablesubareanivelForm, CoordinadorcicloForm, ProfesorjefeForm, ResponsableasignaturaForm, ResponsablesuperiorForm, AccesoColegioForm
 from django.urls import reverse_lazy
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -22,12 +22,12 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import get_template
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, get_connection
 from django.http import JsonResponse
-from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe, TipoRespuestaColegio, Mensaje
+from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe, TipoRespuestaColegio, Mensaje, Ciclos, Colegio, Motivocierre, AccesoColegio
 from django.views.generic import ListView, DetailView
 from django.core.serializers import serialize
 from datetime import date, timedelta, datetime
@@ -43,7 +43,7 @@ class PasswordsChangeView(PasswordChangeView):
     success_url = reverse_lazy('password-success')
 
 def password_success(request):
-    return render(request, 'registration/password_success.html')    
+    return render(request, 'registration/password_success.html')
 
 def envia_correo(request):
     # remitente
@@ -65,7 +65,7 @@ def envia_correo(request):
     # Contenido del mensaje
     cuerpo = """
     Hola .
-    
+
     Por favor, responde este correo unicamente presionando el link a continuación:
     <a href="http://127.0.0.1:8000/formulario_respuesta">Responder al formulario</a>
 
@@ -94,7 +94,7 @@ def obtener_destinatarios_unicos(responsables):
     # Recolecta IDs de Persona de los responsables
     persona_ids = {responsable.persona.id for responsable in responsables}
     # Retorna objetos de Personas asegurando que no hay duplicados
-    return Personas.objects.filter(id__in=persona_ids).distinct()    
+    return Personas.objects.filter(id__in=persona_ids).distinct()
 
 def obtener_destinatarios_ticket(ticket_id):
     # Retorna lista de correos de destino únicos y destinatario principal
@@ -119,25 +119,106 @@ def obtener_destinatarios_ticket(ticket_id):
     if asignatura.id > 1:
         todos_responsables += list(responsableprofesor)
 
-
     lista_destinatarios = obtener_destinatarios_unicos(todos_responsables)
+
     persona = None  # Asegurarse de que persona está definida
 
     if asignatura.id > 1:
         # Primer Destinatario es el Profesor
         for responsable in responsableprofesor:
-            persona = get_object_or_404(Personas, id=responsable.persona.id)
+            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+            if persona_obj:
+                persona = persona_obj
+                break  # Salir del bucle si se encuentra una persona
+
     else:
         # Si Destinatrario correo no ha sido asignado antes
         for responsable in responsablessubareanivel:
-            persona = get_object_or_404(Personas, id=responsable.persona.id)
+            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+            if persona_obj:
+                persona = persona_obj
+                break  # Salir del bucle si se encuentra una persona
+
+
+    # Verificar si persona sigue siendo None y asignar por responsablesubareanivel
+    if persona is None:
+        for responsable in responsablessubareanivel:
+            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+            if persona_obj:
+                persona = persona_obj
+                break  # Salir del bucle si se encuentra una persona
 
     return (lista_destinatarios, persona)
+
+### función única para envío de correos ###
+def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destinatario_correo, persona_firma, from_email, destino):
+    # destino = 1 (COLEGIO) = 2 (APODERADO)
+    #######################################
+    try:
+
+        #print ('from_email --->', from_email)
+        #print (subject, message, to_adr, ticket,mensaje, ticketnuevo, destinatario_correo, persona_firma, from_email, destino)
+        
+        email_config = settings.EMAIL_BACKENDS.get(from_email)
+        print ('email_config -->', email_config)
+        print ('destino -->', destino)
+
+        if not email_config:
+            raise ValueError(f"No se encontró la configuración de correo para '{from_email}'")
+        
+        if destino == 1:
+            # correo al Colegio
+            template = get_template('correo_colegio.html')
+            content = template.render({
+                'destinatario': destinatario_correo,
+                'ticket': ticket,
+                'mensaje': mensaje,
+                'message': message,
+                'ticketnuevo': ticketnuevo, # 0 o 1
+            })
+
+        if destino == 2:
+            # correo al apoderado
+            template = get_template('correo_apoderado.html')
+            content = template.render({
+                'ticket': ticket,
+                'mensaje': mensaje,
+                'persona': persona_firma,
+                'texto': message,
+            })
+    
+        connection = get_connection(
+            backend=email_config['EMAIL_BACKEND'],
+            host=email_config['EMAIL_HOST'],
+            port=email_config['EMAIL_PORT'],
+            username=email_config['EMAIL_HOST_USER'],
+            password=email_config['EMAIL_HOST_PASSWORD'],
+            use_tls=email_config['EMAIL_USE_TLS']
+        )
+
+        #print ('to_adr -->', to_adr)
+
+        mail = EmailMultiAlternatives(
+            subject=subject,
+            body='',
+            from_email=email_config['EMAIL_HOST_USER'],
+            to=to_adr,
+            connection=connection
+        )
+        mail.attach_alternative(content, 'text/html')
+        mail.send()
+
+        return True
+
+    except Exception as e:
+        print (e)
+        return False
 
 
 @transaction.atomic
 def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunto,message,ticketnuevo):
     ############################
+    # FUE REEMPLAZADO POR enviar_correo()
     # Envia Correo al Colegio  #
     ############################
     try:
@@ -166,29 +247,45 @@ def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunt
     except Exception as e:
         print(f"Error: {e}")
         return False
-        
 
+@transaction.atomic
 def envia_primer_correo_colegio(request):
     ###########################################################
     #           PRIMER ENVIO DE CORREO AL COLEGIO             #
     # Prepara los datos para llamar a la función envio_correo #
     ###########################################################
-        
+
     # Prepara los datos para llamar al envio_correo_colegio
 
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
-    nuevo_estado = get_object_or_404(Estadoticket, id=2)
+    colegio = ticket.subarea.area.colegio
+    #emisor = colegio.correo
+    email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
+
+    #print ("email_config['EMAIL_HOST_USER'] --> ", email_config['EMAIL_HOST_USER'])
+
     user = get_object_or_404(User, username='bridge')
     area = ticket.subarea.area.nombre
 
     personas_destinatarias, principal = obtener_destinatarios_ticket(ticket.id)
 
+   
+    if principal == None:
+        contexto = {
+            'msg': "No es posible enviar correo, falta definir Destinatario Principal!",
+            'ticketid': ticket.id
+        }
+        
+        return render(request, 'error_correo.html', contexto)
+
     to_adr = [persona.correo for persona in personas_destinatarias]
 
     asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
 
-    # asunto='Nuevo Caso en Sistema de Bienestar'
-    emisor = 'bienestar@colegiolaabadia.cl'
+    #emisor = 'bienestar@colegiolaabadia.cl'
+    emisor = email_config['EMAIL_HOST_USER']
+    #print ('envia_primer_correo_colegio: emisor -->', emisor)
+
     message = f"De: {emisor}\n Para: {principal.correo}\n Asunto: {asunto}\n Mensaje: {ticket.motivo}"
     try:
         # Crea Mensaje
@@ -202,6 +299,7 @@ def envia_primer_correo_colegio(request):
             persona=principal
         )
         # Actualiza Ticket
+        nuevo_estado = get_object_or_404(Estadoticket, id=2)
         fec = datetime.today()
         ticket.fechaprimerenvio = fec
         ticket.estadoticket = nuevo_estado
@@ -216,16 +314,42 @@ def envia_primer_correo_colegio(request):
             fechahora=fec
         )
 
-        envio = envio_correo_colegio(
-            request,
+        #print ('enviar_correo(...)')
+#enviar_correo(
+# subject,
+# message,
+# to_adr,
+# ticket,
+# mensaje,
+# ticketnuevo,
+# destinatario_correo,
+# persona_firma,
+# from_email,
+# destino):
+        print ('colegio.setting_name -->', colegio.setting_name)
+
+        envio = enviar_correo(
+            asunto,
+            message,
             to_adr,
             ticket,
             nuevo_mensaje,
+            1,
             principal,
-            asunto,
-            message,
+            [],
+            colegio.setting_name,
             1
         )
+        # envio = envio_correo_colegio(
+        #     request,
+        #     to_adr,
+        #     ticket,
+        #     nuevo_mensaje,
+        #     principal,
+        #     asunto,
+        #     message,
+        #     1
+        # )
         if not envio:
             contexto = {
             'texto': 'Ha ocurrido un error en el envío del Mensaje, revise la casilla de bienestar@abadia.cl'
@@ -236,10 +360,10 @@ def envia_primer_correo_colegio(request):
     except Exception as e:
         print(f"Error: {e}")
         return False
-    
+
     return redirect(f'/{ticket.id}')
 
-
+@login_required
 def pruebacorreo(request):
     # botón desde Descripción para envío de correo
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
@@ -252,7 +376,7 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
     ##############################################################################
     #               L I N K    CORREO COLEGIO                                    #
     # Vista que se presenta luego de presionar el Link en el correo del Colegio  #
-    # desde aquí se dará respuesta al Apoderado al presionar el botón ENVIAR     # 
+    # desde aquí se dará respuesta al Apoderado al presionar el botón ENVIAR     #
     ##############################################################################
     template_name = "formulario_respuesta_colegio.html"
 
@@ -270,19 +394,22 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
         contexto = {
             'mensaje': mensaje_respondido,
         }
-       
-        return render(request, 'correo_respondido.html', contexto)
-        
-    
-    tiporespuesta = TipoRespuestaColegio.objects.all().order_by('id')
 
+        return render(request, 'correo_respondido.html', contexto)
+
+    tiporespuesta = TipoRespuestaColegio.objects.all().order_by('id')
     # Obtener todos los destinatarios sin duplicados, en este caso el principal es el Apoderado (no se usa)
     personas_destinatarios,principal = obtener_destinatarios_ticket(ticket.id)
+    # Crear una lista de IDs de personas_destinatarios
+    ids_destinatarios = [p.id for p in personas_destinatarios]
+
+    # Filtrar los objetos Personas con los IDs obtenidos
+    destinatarios = Personas.objects.filter(id__in=ids_destinatarios)
 
     contexto = {
         'ticket': ticket,
         'mensaje': mensaje,
-        'destinatarios': personas_destinatarios,
+        'destinatarios': destinatarios,
         'tiporespuestas': tiporespuesta,
 
     }
@@ -292,6 +419,7 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
 @transaction.atomic
 def envio_correo_apoderado(request,to_adr, subject, message, persona_firma, ticket, mensaje):
     #############################
+    # FUE REEMPLADO POR función única: enviar_correo()
     # Envío Correo al Apoderado #
     #############################
     try:
@@ -315,19 +443,18 @@ def envio_correo_apoderado(request,to_adr, subject, message, persona_firma, tick
         )
         mail.attach_alternative(content, 'text/html')
         mail.send()
-        
+
         return True
 
-        
+
     except Exception as e:
         print(f"Error: {e}")
         return False
-        
 
 def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
     ###############################################################################
     # Vista que se presenta luego de presionar el Link en el correo del Apoderado #
-    # desde aquí se dará respuesta al Colegio una vez presione el botón ENVIAR    # 
+    # desde aquí se dará respuesta al Colegio una vez presione el botón ENVIAR    #
     ###############################################################################
     template_name = "formulario_respuesta_apoderado.html"
 
@@ -337,7 +464,7 @@ def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
     contexto = {
         'ticket': ticket,
         'mensaje': mensaje,
-        
+
     }
     return render(request, template_name, context=contexto)
 
@@ -348,7 +475,7 @@ def respuesta_colegio(request):
     # Se preparan los datos para enviar correo al Apoderado                                      #
     ##############################################################################################
     if request.method == 'POST':
-       
+
         idticket = request.POST['idticket']
         tiporespuesta = request.POST['tiporespuesta']
         respuesta = request.POST['motivo']
@@ -358,6 +485,8 @@ def respuesta_colegio(request):
         try:
             # Lee datos del ticket
             ticket = get_object_or_404(Ticket,id = idticket)
+            colegio = ticket.subarea.area.colegio
+            email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
 
             # Actualiza estado del mensaje anterior como Respondido
             mensaje = get_object_or_404(Mensaje, id=currentmensaje)
@@ -365,31 +494,29 @@ def respuesta_colegio(request):
             mensaje.save()
 
             fechahoracambioestado = datetime.today()
-          
             if tiporespuesta == '1':
                 # da respuesta al Apoderado
-                opcion = 4
-                estadoticket = Estadoticket.objects.get(id=opcion)
+                estado = 4
+                estadoticket = Estadoticket.objects.get(id=estado)
+
                 if ticket.estadoticket_id == 2:
                     # guardar fecha y hora de primera respuesta del colegio
                     ticket.fechaprimerarespuesta = fechahoracambioestado
 
-                ticket.fechahoracambioestado = fechahoracambioestado
-                ticket.estadoticket_id = estadoticket.id
-                ticket.save()
-
             if tiporespuesta == '2':
                 # se mantiene el caso del lado del Colegio
-                opcion = 3
-                estadoticket = Estadoticket.objects.get(id=opcion)
+                estado = 3
+                estadoticket = Estadoticket.objects.get(id=estado)
 
-                # if ticket.estadoticket_id == 2:
-                #     # guardar fecha y hora de primera respuesta del colegio (estado=2)
-                #     ticket.fechaprimerarespuesta = fechahoracambioestado
+            if tiporespuesta == '3':
+                estado=5
+                estadoticket = Estadoticket.objects.get(id=estado)
 
-                ticket.fechahoracambioestado = fechahoracambioestado
-                ticket.estadoticket_id = estadoticket.id
-                ticket.save()
+
+            ticket.fechahoracambioestado = fechahoracambioestado
+            ticket.estadoticket_id = estadoticket.id
+            ticket.save()
+
 
             # crea seguimiento con datos de respuesta del colegio al apoderado
             user = get_object_or_404(User, username='bridge')
@@ -423,16 +550,28 @@ def respuesta_colegio(request):
             )
 
             # enviar correo de respuesta al Apoderado cc a todos los involucrados
-            
-            envio = envio_correo_apoderado(
-                request,
-                destinatarios_str,
+            envio = enviar_correo(
                 mensaje.asunto,
                 respuesta,
-                personaemisor,
+                destinatarios_str,
                 ticket,
-                nuevo_mensaje
+                nuevo_mensaje,
+                0,
+                '',
+                personaemisor,
+                colegio.setting_name,
+                2
             )
+
+            # envio = envio_correo_apoderado(
+            #     request,
+            #     destinatarios_str,
+            #     mensaje.asunto,
+            #     respuesta,
+            #     personaemisor,
+            #     ticket,
+            #     nuevo_mensaje
+            # )
 
             if envio:
                 contexto = {
@@ -476,6 +615,8 @@ def respuesta_apoderado(request):
         try:
             # Lee datos del ticket
             ticket = get_object_or_404(Ticket,id = idticket)
+            colegio = ticket.subarea.area.colegio
+            email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
 
             # Actualiza estado del mensaje anterior como Respondido
             mensaje = get_object_or_404(Mensaje, id=currentmensaje)
@@ -512,20 +653,31 @@ def respuesta_apoderado(request):
                 mensajerespondidoid=mensaje.id
             )
 
-            # enviar correo de respuesta al Apoderado cc a todos los involucrados
-
-            #request,to_adr,ticket,mensaje,destinatario_correo,asunto,message,ticketnuevo
-            envio = envio_correo_colegio(
-                request,
-                destinatarios_str,
-                ticket,
-                nuevo_mensaje,  
-                mensaje.persona,
-                mensaje.asunto,
-                respuesta,
-                0
-                
+            envio = enviar_correo(
+                    mensaje.asunto,
+                    respuesta,
+                    destinatarios_str,
+                    ticket,
+                    nuevo_mensaje,
+                    0,
+                    principal,
+                    "",
+                    colegio.setting_name,
+                    1
             )
+
+
+            # envio = envio_correo_colegio(
+            #     request,
+            #     destinatarios_str,
+            #     ticket,
+            #     nuevo_mensaje,
+            #     mensaje.persona,
+            #     mensaje.asunto,
+            #     respuesta,
+            #     0
+
+            # )
 
             if envio:
                 contexto = {
@@ -561,9 +713,149 @@ def enviacorreoalapoderado(request):
     envio_correo_apoderado(ticket.id)
     return redirect(f'/{ticket.id}')
 
+class VisorHistorialcaso(DetailView):
+
+    template_name = 'visorHistorialticket.html'
+
+    def get(self, request, *args, **kwargs):
+
+        pk = self.kwargs.get('pk')
+        ticket = Ticket.objects.get(id=pk)
+        tespera = date.today() - ticket.fechacreacion.date()
+        diastotalespera = tespera.days
+        tcambioestado = date.today() - ticket.fechahoracambioestado.date()
+        dias_de_cambio_estado = str(tcambioestado.days)  # Días de diferencia
+        nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
+
+        responsableprofesor = ProfesorResponsable.objects.filter(
+            asignatura=ticket.asignatura, nivel=ticket.nivel)
+        responsablessubareanivel = ResponsableSubareaNivel.objects.filter(
+            subarea=ticket.subarea, nivel=ticket.nivel)
+        coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
+        responsablesuperior = ResponsableSuperior.objects.filter(
+            subarea=ticket.subarea)
+
+        personaresponsable = Personas.objects.filter(
+            id__in=[r.persona.id for r in responsablessubareanivel]).first()
+        personaciclo = Personas.objects.filter(
+            id__in=[r.persona.id for r in coordinadorciclo]).first()
+        personasuperior = Personas.objects.filter(
+            id__in=[r.persona.id for r in responsablesuperior]).first()
+        personaresponsableasignatura = Personas.objects.filter(
+            id__in=[r.persona.id for r in responsableprofesor]).first()
+
+        profesorjefe = []
+        if ticket.subarea.profejefe:
+            profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
+        
+        responsable_asignatura = []
+        if ticket.asignatura.id > 1:
+            responsable_asignatura = personaresponsableasignatura
+            #print ()
+
+
+        contexto = {
+            'ticket': ticket,
+            'diastotalespera': diastotalespera,
+            'diascambioestado': dias_de_cambio_estado,
+            'segs': Mensaje.objects.filter(ticket=pk),
+            'estados': Estadoticket.objects.all(),
+            # 'trx': self.model2.objects.filter(pk=pk),
+            'encabezado': 'Visor de Caso',
+            'responsablearea': personaresponsable,
+            'responsableciclo': personaciclo,
+            'responsablesuperrior': personasuperior,
+            'responsableasignatura': responsable_asignatura,
+            'profesorjefe': profesorjefe
+        }
+        return render(request, self.template_name, contexto)
+
+
+def consulta_cierre_caso(request,pk):
+    template_name = 'confirma_cierre.html'
+    ticket = get_object_or_404(Ticket, id=pk)
+
+    # Obtener todos los destinatarios sin duplicados, en este caso el principal es el Apoderado (no se usa)
+    personas_destinatarios,principal = obtener_destinatarios_ticket(ticket.id)
+    # Crear una lista de IDs de personas_destinatarios
+    ids_destinatarios = [p.id for p in personas_destinatarios]
+
+    # Filtrar los objetos Personas con los IDs obtenidos
+    destinatarios = Personas.objects.filter(id__in=ids_destinatarios)
+    print ('estadoticket_id -->', ticket.estadoticket)
+
+    contexto = {
+        'ticket': ticket,
+        'motivos': Motivocierre.objects.all(),
+        'personascierres': destinatarios,
+    }
+
+    return render(request, template_name, contexto)
+
+def confirma_cierre_caso(request):
+    if request.method == 'POST':
+        idticket = request.POST['idticket']
+        tipocierre = request.POST['motivocierre']
+        persona = request.POST['persona']
+        ticket = get_object_or_404(Ticket, id = idticket)
+        motivocierre = get_object_or_404(Motivocierre, id = tipocierre)
+        personaemisor = get_object_or_404(Personas, id=persona)
+
+        print ('ticket a cerrar -->', idticket)
+        estado = 5
+        estadoticket = Estadoticket.objects.get(id=estado)
+        fechahoracambioestado = datetime.today()
+        ticket.fechahoracambioestado = fechahoracambioestado
+        ticket.estadoticket_id = estadoticket.id
+        ticket.personacierre_id = personaemisor.id
+        ticket.motivocierre_id = motivocierre.id
+        ticket.save()
+
+        ### crear Mensaje ###
+        motivocierre = motivocierre.nombre
+        Mensaje.objects.create(
+            ticket=ticket,
+            correoemisor=personaemisor.correo,
+            correodestino="",
+            respondido=1,
+            asunto="CIERRA CASO",
+            message=f'{personaemisor.nombre} ha cerrado el caso, con el siguiente motivo: {motivocierre}',
+            persona=personaemisor
+        )
+        ### crear Seguimiento ###
+        user = get_object_or_404(User, username='bridge')
+        fec = datetime.today()
+        Seguimiento.objects.create(
+            ticket=ticket,
+            comentario=f'{personaemisor.nombre} Cierra el caso, motivo: {motivocierre}',
+            user=user,
+            fechahora=fec
+        )
+
+        contexto = {
+            'ticket': ticket,
+            'mensaje': 'Caso ha sido cerrado con éxito. Puedes cerrar esta pestaña.'
+        }
+
+        return render(request,'cierra_pantalla.html', contexto)
+    else:
+        contexto = {
+        'mensaje': 'Proceso cancelado. Puedes cerrar esta pestaña.'
+    }
+        return render(request,'cierra_pantalla.html', contexto)
+        
+
+def cierrapantalla(request):
+    contexto = {
+        'mensaje': 'Proceso cancelado. Puedes cerrar esta pestaña.'
+    }
+    return render(request,'cierra_pantalla.html', contexto)
+
+
 
 def registroticket(request):
     # Registro Ticket Colegio Abadía Id=1
+    # Vista Personalizada para Colegio Id = 1
     ' Colegio 1'
     colegio_id = 1  # ID del Colegio 1
     niveles = Nivel.objects.filter(
@@ -587,6 +879,33 @@ def registroticket(request):
     }
     return render(request, template_name, contexto)
 
+def registrocasos(request):
+    # Registro Ticket Colegio 2
+    # Vista Personalizada para Colegio Id = 2
+    ' Colegio 2'
+    colegio_id = 2  # ID del Colegio 1
+    niveles = Nivel.objects.filter(
+        ciclo__colegio_id=colegio_id).order_by('orden')
+    cursos = Curso.objects.filter(colegio_id=colegio_id).order_by('orden')
+    tipocontactos = Tipocontacto.objects.filter(colegio_id=colegio_id)
+    # areas = Area.objects.filter(colegio_id = colegio_id)
+    subareas = Subarea.objects.filter(
+        area__colegio_id=colegio_id).order_by('area')
+    asignatura = Asignatura.objects.filter(
+        colegio_id=colegio_id).order_by('orden')
+
+    template_name = "formulario_ticket2.html"
+    contexto = {
+        'niveles': niveles,
+        'cursos': cursos,
+        'tipocontactos': tipocontactos,
+        'subareas': subareas,
+        'asignaturas': asignatura,
+
+    }
+    return render(request, template_name, contexto)
+
+
 
 def cargar_subareas(request):
     areaid = request.GET.get('area_id')
@@ -599,6 +918,7 @@ def cargar_subareas(request):
 
 def creaticket(request):
     if request.method == 'POST':
+
         estadoticket = get_object_or_404(Estadoticket, id=1)
         nombre = request.POST['nombre']
         apellidos = request.POST['apellidos']
@@ -613,35 +933,61 @@ def creaticket(request):
         motivo = request.POST['motivo']
         asignaturaid = request.POST['asignatura']
         fechahoracambioestado = datetime.now()
-        Ticket.objects.create(nombre=nombre, apellido=apellidos, correo=email, telefono=fono, tipocontacto_id=tipocontacto, subarea_id=subarea, motivo=motivo, estadoticket=estadoticket,
-                              fechahoracambioestado=fechahoracambioestado, nombrealumno=nombrealumno, apellidoalumno=apellidosalumno, nivel_id=nivel, curso_id=curso, asignatura_id=asignaturaid)
 
-    return redirect('/registroticket')
+        Ticket.objects.create(
+            nombre=nombre,
+            apellido=apellidos,
+            correo=email,
+            telefono=fono,
+            tipocontacto_id=tipocontacto,
+            subarea_id=subarea,
+            motivo=motivo,
+            estadoticket=estadoticket,
+            fechahoracambioestado=fechahoracambioestado,
+            nombrealumno=nombrealumno,
+            apellidoalumno=apellidosalumno,
+            nivel_id=nivel,
+            curso_id=curso,
+            asignatura_id=asignaturaid)
+
+        subarea = get_object_or_404(Subarea, id = subarea)
+        colegio = subarea.area.colegio
+        contexto = {
+            'texto': 'Le responderemos a la brevedad',
+            'colegio': colegio
+
+            }
+         
+    return render(request,'correo_enviado.html',contexto)
+    
 
 @login_required
 def index(request):
     return render(request, "index.html")
 
 class Index(LoginRequiredMixin,DetailView):
-    colegio_id = 1  # ID del Colegio 1
+    
     template_name = 'index.html'
     def get(self, request, *args, **kwargs):
-        colegio_id = 1  # ID del Colegio 1
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegioactual = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        print (colegioactual)
 
         nuevos = Ticket.objects.filter(
-            subarea__area__colegio_id=colegio_id, estadoticket_id = 1).count()
+            subarea__area__colegio_id=colegioactual, estadoticket_id = 1).count()
 
         colegio1 = Ticket.objects.filter(
-            subarea__area__colegio_id=colegio_id, estadoticket_id = 2).count()
+            subarea__area__colegio_id=colegioactual, estadoticket_id = 2).count()
 
         conversacioncolegio = Ticket.objects.filter(
-            subarea__area__colegio_id=colegio_id, estadoticket_id = 3).count()
+            subarea__area__colegio_id=colegioactual, estadoticket_id = 3).count()
 
         conversacionapoderado = Ticket.objects.filter(
-            subarea__area__colegio_id=colegio_id, estadoticket_id = 4).count()
+            subarea__area__colegio_id=colegioactual, estadoticket_id = 4).count()
 
         cerrado = Ticket.objects.filter(
-            subarea__area__colegio_id=colegio_id, estadoticket_id = 5).count()
+            subarea__area__colegio_id=colegioactual, estadoticket_id = 5).count()
 
 
         contexto = {
@@ -658,39 +1004,56 @@ class Listadocasos(LoginRequiredMixin,DetailView):
     template_name = 'mainticket.html'
 
     def get(self, request, *args, **kwargs):
-        colegio_id = 1  # ID del Colegio 1
+        current_user = request.user
+        print ('current_user -->', current_user)
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegioactual = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
+        colegio_id = colegioactual  # ID del Colegio Actual
+        
+        print ('colegio_id -->', colegio_id)
 
         nuevos = Ticket.objects.filter(
             subarea__area__colegio_id=colegio_id, estadoticket_id=1).order_by('fechacreacion').reverse()
-        respuestas = Ticket.objects.filter(
+        primeraresp = Ticket.objects.filter(
             subarea__area__colegio_id=colegio_id, estadoticket_id=2).order_by('fechacreacion').reverse()
-        acciones = Ticket.objects.filter(
+        convercolegio = Ticket.objects.filter(
             subarea__area__colegio_id=colegio_id, estadoticket_id=3).order_by('fechacreacion').reverse()
-        cerrados = Ticket.objects.filter(
+        converapoderado = Ticket.objects.filter(
             subarea__area__colegio_id=colegio_id, estadoticket_id=4).order_by('fechacreacion').reverse()
+        cerrado = Ticket.objects.filter(
+            subarea__area__colegio_id=colegio_id, estadoticket_id=5).order_by('fechacreacion').reverse()
 
         contexto = {
             'nuevos': nuevos,
-            'respuestas': respuestas,
-            'acciones': acciones,
-            'cerrados': cerrados,
+            'primeraresp': primeraresp,
+            'convercolegio': convercolegio,
+            'converapoderado': converapoderado,
+            'cerrado': cerrado
         }
         return render(request, self.template_name, contexto)
 
 
-class VisorTicket(DetailView):
+class VisorTicket(LoginRequiredMixin,DetailView):
 
     template_name = 'visorticket.html'
 
     def get(self, request, *args, **kwargs):
 
         pk = self.kwargs.get('pk')
+        current_user = request.user
+        user_id = current_user.id
         ticket = Ticket.objects.get(id=pk)
         tespera = date.today() - ticket.fechacreacion.date()
         diastotalespera = tespera.days
         tcambioestado = date.today() - ticket.fechahoracambioestado.date()
         dias_de_cambio_estado = str(tcambioestado.days)  # Días de diferencia
         nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
+
+
+##########
+        responsableprofesor = ProfesorResponsable.objects.filter(
+            asignatura=ticket.asignatura, nivel=ticket.nivel)
         responsablessubareanivel = ResponsableSubareaNivel.objects.filter(
             subarea=ticket.subarea, nivel=ticket.nivel)
         coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
@@ -703,18 +1066,32 @@ class VisorTicket(DetailView):
             id__in=[r.persona.id for r in coordinadorciclo]).first()
         personasuperior = Personas.objects.filter(
             id__in=[r.persona.id for r in responsablesuperior]).first()
+        personaresponsableasignatura = Personas.objects.filter(
+            id__in=[r.persona.id for r in responsableprofesor]).first()
+
+        profesorjefe = []
+        if ticket.subarea.profejefe:
+            profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
+        
+        responsable_asignatura = []
+        if ticket.asignatura.id > 1:
+            responsable_asignatura = personaresponsableasignatura
+            #print ()
 
         contexto = {
             'ticket': ticket,
             'diastotalespera': diastotalespera,
             'diascambioestado': dias_de_cambio_estado,
-            'segs': Seguimiento.objects.filter(ticket=pk),
+            'segs': Mensaje.objects.filter(ticket=pk),
             'estados': Estadoticket.objects.all(),
             # 'trx': self.model2.objects.filter(pk=pk),
-            'encabezado': 'Visor de Ticket',
+            'encabezado': 'Visor de Caso',
             'responsablearea': personaresponsable,
             'responsableciclo': personaciclo,
             'responsablesuperrior': personasuperior,
+            'responsableasignatura': responsable_asignatura,
+            'profesorjefe': profesorjefe,
+            'user_id':user_id
         }
         return render(request, self.template_name, contexto)
 
@@ -724,6 +1101,7 @@ def guardacomentario(request):
     # print (request.POST)
     comentario = request.POST['comentario']
     user_str = request.POST['userid']
+        
     idticket_str = request.POST['idticket']
 
     cambiar_estado = 'cbox1' in request.POST
@@ -731,8 +1109,7 @@ def guardacomentario(request):
     crear_tarea = request.POST.get('cbox2', False)
     activar_correo = request.POST.get('cbox3', False)
 
-    user = get_object_or_404(User, username='bridge')
-    # user = get_object_or_404(User, id=user_str)
+    user = get_object_or_404(User, id=user_str)
 
     idticket = get_object_or_404(Ticket, id=idticket_str)
     estado_actual = idticket.estadoticket.nombre
@@ -772,13 +1149,14 @@ def guardacomentario(request):
 def zanex(request):
     return render(request, 'index.html')
 
-
+@login_required
 def Logout(_request):
     return render(_request,'registration/login.html')
 
 def es_admin(user):
     return user.groups.filter(name='Administrador').exists()
 
+@method_decorator(login_required, name='dispatch')
 @method_decorator(user_passes_test(es_admin), name='dispatch')
 class Listausuarios(LoginRequiredMixin, ListView):
     model = User
@@ -799,6 +1177,7 @@ class Listausuarios(LoginRequiredMixin, ListView):
         }
         return render(request, self.template_name, contexto)
 
+@login_required
 def Registrouser(request):
     data = {
         'form': CustomCreationForm()
@@ -814,6 +1193,7 @@ def Registrouser(request):
 
     return render(request, 'registration/registro.html', data)
 
+@login_required
 def edituser(request, pk):
     usuario = User.objects.get(id=pk)
     template_name = 'registration/edit_user.html'
@@ -831,11 +1211,11 @@ def edituser(request, pk):
         else:
             data = {
                 'form': UserForm(instance=usuario),
-                'msg': 'Ha ocurrido en el formulario revise los datos'
+                'msg': 'Ha ocurrido un error en el formulario revise los datos'
             }
             return render(request,template_name,context=data)
 
-    return render(request,template_name, data)   
+    return render(request,template_name, data)
 
 ############################################ < Gráficos > #########################################
 def reporte_directorio(request):
@@ -845,18 +1225,19 @@ def chart_casosarea(request):
     #####################
     # Reclamos por AREA #
     #####################
+    ## Falta filtrar por Colegio
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     end_date = date.today()
     end_of_day = end_date + timedelta(days=1)
-    
+
     results = Ticket.objects.filter(
         fechacreacion__gte=start_date,
         fechacreacion__lte=end_of_day
         ).values('subarea__area__nombre').annotate(
             total=Count('id')
             ).order_by('subarea__area__nombre')
- 
+
     if (len(results) > 0):
         # Crear listas para los valores y nombres
         values = []
@@ -879,13 +1260,13 @@ def chart_casosarea(request):
             },
             'series': [
                 {
-                    
+
                     'type': 'pie',
                     'radius': '80%',
                     'data': [{'value': value, 'name': name} for value, name in zip(values, names)]
                 }
             ]
-        }                    
+        }
         return JsonResponse(chart_data)
 
 
@@ -893,12 +1274,12 @@ def chart_tpromedioprimrespuesta(_request):
     #####################################
     # Tiempo promedio primera respuesta #
     #####################################
-    
+
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     end_date = date.today()
     end_of_day = end_date + timedelta(days=1)
-    
+
     # recoger los promedios de los tiempos de respuesta para los casos que hayan tenido primerarespuesta
     results = Ticket.objects.filter(
         fechacreacion__gte=start_date,
@@ -947,18 +1328,18 @@ def chart_tpromedioprimrespuesta(_request):
                 },
             'series': [{ 'data': values, 'type': 'bar' }]
         }
-        
+
     return JsonResponse(chart_data)
 
 def chart_casostipocontacto(_request):
     #####################################
     # Casos por AñoMes y Tipo Contacto  #
     #####################################
-    
+
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     # start_of_day = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
-    
+
 
     end_date = date.today()
     # end_of_day = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
@@ -978,7 +1359,7 @@ def chart_casostipocontacto(_request):
         'tipo'  # Agrupar por año, mes y tipo de contacto
     ).annotate(
         count=Count('id')  # Contar el número de tickets por grupo
-    ).order_by('agno', 'mes', 'tipo')  # Ordenar los resultados por año, mes y tipo de contacto    
+    ).order_by('agno', 'mes', 'tipo')  # Ordenar los resultados por año, mes y tipo de contacto
 
     # Organizar los datos
     periodos = sorted(set(f"{dato['mes']:02}/{dato['agno']}" for dato in results))
@@ -1025,9 +1406,951 @@ def chart_casostipocontacto(_request):
                 } for tipo, counts in data.items()
             ]
         }
-            
-    return JsonResponse(chart_data)
 
+    return JsonResponse(chart_data)
+############################################ < Tablas > ###########################################
+class Vista_Personas(LoginRequiredMixin, ListView):
+    template_name = 'vistaPersonas.html'
+    model = Personas
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        return self.model.objects.filter(colegio__id=colegio_id).order_by('nombre')
+        
+
+    def get(self, request, *args, **kwargs):
+
+        contexto = {
+            'personas': self.get_queryset(),
+            'encabezado': 'Listado de Docentes',
+            'menu': 'Tabla Docentes',
+            'submenu': 'Tablas / Docentes',
+            'titulo': 'Docentes'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarpersona(request,pk):
+    persona = Personas.objects.get(id=pk)
+    template_name = 'editar_persona.html'
+    data = {
+        'form': PersonasForm(instance=persona)
+    }
+
+    if request.method == 'POST':
+        formulario = PersonasForm(data=request.POST, instance=persona)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listapersonas')
+        else:
+            data = {
+                'form': PersonasForm(instance=persona),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creapersona(request):
+    template_name = 'editar_persona.html'
+    data = {
+        'form': PersonasForm()
+    }
+
+    if request.method == 'POST':
+        formulario = PersonasForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listapersonas")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+class Vista_Ciclos(LoginRequiredMixin, ListView):
+    template_name = 'vistaCiclos.html'
+    model = Ciclos
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
+        return self.model.objects.filter(colegio__id=colegio_id).order_by('nombre')
+
+    def get(self, request, *args, **kwargs):
+
+        contexto = {
+            'ciclos': self.get_queryset(),
+            'encabezado': 'Listado de Ciclos Colegio',
+            'menu': 'Tablas Ciclos',
+            'submenu': 'Tablas fijas / Ciclos',
+            'titulo': 'Ciclos'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarciclo(request,pk):
+    ciclo = Ciclos.objects.get(id=pk)
+    template_name = 'editar_ciclo.html'
+    data = {
+        'form': CiclosForm(instance=ciclo)
+    }
+
+    if request.method == 'POST':
+        formulario = CiclosForm(data=request.POST, instance=ciclo)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaciclos')
+        else:
+            data = {
+                'form': CiclosForm(instance=ciclo),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+class Vista_Colegios(LoginRequiredMixin, ListView):
+    template_name = 'vistaColegios.html'
+    model = Colegio
+
+    def get_queryset(self):
+
+        return self.model.objects.order_by('nombre')
+
+    def get(self, request, *args, **kwargs):
+
+        contexto = {
+            'colegios': self.get_queryset(),
+            'encabezado': 'Listado de Colegios',
+            'menu': 'Tablas Colegios',
+            'submenu': 'Tablas fijas / Colegios',
+            'titulo': 'Colegios'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarcolegio(request,pk):
+    colegio = Colegio.objects.get(id=pk)
+    template_name = 'editar_colegio.html'
+    data = {
+        'form': ColegiosForm(instance=colegio)
+    }
+
+    if request.method == 'POST':
+        formulario = ColegiosForm(data=request.POST, instance=colegio)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listacolegios')
+        else:
+            data = {
+                'form': ColegiosForm(instance=colegio),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+def lista_niveles(_request):
+    niveles = list(Nivel.objects.values('id', 'nombre', 'ciclo__nombre','orden'))
+    data = {'niveles': niveles}
+    return JsonResponse(data)
+
+class Vista_Niveles(LoginRequiredMixin, ListView):
+    template_name = 'vistaNiveles.html'
+    model = Nivel
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
+        return self.model.objects.filter(ciclo__colegio__id = colegio_id).order_by('orden')
+
+    def get(self, request, *args, **kwargs):
+        niveles = self.get_queryset()
+
+        contexto = {
+            'niveles': niveles,
+            'encabezado': 'Listado de Niveles',
+            'menu': 'Tablas Niveles',
+            'submenu': 'Tablas fijas / Niveles',
+            'titulo': 'Niveles'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarnivel(request,pk):
+    nivel = Nivel.objects.get(id=pk)
+    template_name = 'editar_nivel.html'
+    data = {
+        'form': NivelesForm(instance=nivel)
+    }
+
+    if request.method == 'POST':
+        formulario = NivelesForm(data=request.POST, instance=nivel)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaniveles')
+        else:
+            data = {
+                'form': NivelesForm(instance=nivel),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creanivel(request):
+    template_name = 'editar_nivel.html'
+    data = {
+        'form': NivelesForm()
+    }
+
+    if request.method == 'POST':
+        formulario = NivelesForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaniveles")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+def eliminarnivel(request,pk):
+    msg = ""
+    nivel = get_object_or_404(Nivel,id=pk)
+    template_name = 'vistaNiveles.html'
+
+    try:
+        print ('nivel encontrado-->', nivel)
+        nivel.delete()
+        return redirect(to="listaniveles")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+
+class Vista_Cursos(LoginRequiredMixin, ListView):
+    template_name = 'vistaCursos.html'
+    model = Curso
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
+        return self.model.objects.filter(colegio__id = colegio_id).order_by('orden')
+
+    def get(self, request, *args, **kwargs):
+        cursos = self.get_queryset()
+
+        contexto = {
+            'cursos': cursos,
+            'encabezado': 'Listado de Cursos',
+            'menu': 'Tablas Cursos',
+            'submenu': 'Tablas fijas / Cursos',
+            'titulo': 'Cursos'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarcurso(request,pk):
+    curso = Curso.objects.get(id=pk)
+    template_name = 'editar_curso.html'
+    data = {
+        'form': CursosForm(instance=curso)
+    }
+
+    if request.method == 'POST':
+        formulario = CursosForm(data=request.POST, instance=curso)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listacursos')
+        else:
+            data = {
+                'form': CursosForm(instance=curso),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creacurso(request):
+    template_name = 'editar_curso.html'
+    data = {
+        'form': CursosForm()
+    }
+
+    if request.method == 'POST':
+        formulario = CursosForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listacursos")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+def eliminarcurso(request,pk):
+    msg = ""
+    curso = get_object_or_404(Curso,id=pk)
+    template_name = 'vistaCursos.html'
+
+    try:
+        curso.delete()
+        return redirect(to="listacursos")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+class Vista_Areas(LoginRequiredMixin, ListView):
+    template_name = 'vistaAreas.html'
+    model = Area
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        return self.model.objects.filter(colegio__id = colegio_id).order_by('nombre')
+
+    def get(self, request, *args, **kwargs):
+        
+        areas = self.get_queryset()
+
+        contexto = {
+            'areas': areas,
+            'encabezado': 'Listado de Areas',
+            'menu': 'Tablas Areas',
+            'submenu': 'Tablas fijas / Areas',
+            'titulo': 'Areas'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editararea(request,pk):
+    area = Area.objects.get(id=pk)
+    template_name = 'editar_area.html'
+    data = {
+        'form': AreasForm(instance=area)
+    }
+
+    if request.method == 'POST':
+        formulario = AreasForm(data=request.POST, instance=area)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaareas')
+        else:
+            data = {
+                'form': AreasForm(instance=area),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creaarea(request):
+    template_name = 'editar_area.html'
+    data = {
+        'form': AreasForm()
+    }
+
+    if request.method == 'POST':
+        formulario = AreasForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaareas")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminararea(request,pk):
+    msg = ""
+    area = get_object_or_404(Area,id=pk)
+    template_name = 'vistaAreas.html'
+
+    try:
+        area.delete()
+        return redirect(to="listaareas")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+class Vista_Subareas(LoginRequiredMixin, ListView):
+    template_name = 'vistaSubareas.html'
+    model = Subarea
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual        
+
+        return self.model.objects.filter(area__colegio__id = colegio_id).order_by('area')
+
+    def get(self, request, *args, **kwargs):
+        subareas = self.get_queryset()
+
+        contexto = {
+            'subareas': subareas,
+            'encabezado': 'Listado de Subareas',
+            'menu': 'Tablas Subareas',
+            'submenu': 'Tablas fijas / Subareas',
+            'titulo': 'Subareas'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarsubarea(request,pk):
+    subarea = Subarea.objects.get(id=pk)
+    template_name = 'editar_subarea.html'
+    data = {
+        'form': SubareasForm(instance=subarea)
+    }
+
+    if request.method == 'POST':
+        formulario = SubareasForm(data=request.POST, instance=subarea)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listasubareas')
+        else:
+            data = {
+                'form': SubareasForm(instance=subarea),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creasubarea(request):
+    template_name = 'editar_subarea.html'
+    data = {
+        'form': SubareasForm()
+    }
+
+    if request.method == 'POST':
+        formulario = SubareasForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listasubareas")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarsubarea(request,pk):
+    msg = ""
+    subarea = get_object_or_404(Subarea,id=pk)
+    template_name = 'vistaSubareas.html'
+
+    try:
+        subarea.delete()
+        return redirect(to="listasubareas")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+class Vista_Tiporespuesta(LoginRequiredMixin, ListView):
+    template_name = 'vistaTiporespuestacolegio.html'
+    model = TipoRespuestaColegio
+
+    def get_queryset(self):
+        return self.model.objects.order_by('nombre')
+
+    def get(self, request, *args, **kwargs):
+        tiporespuesta = self.get_queryset()
+
+        contexto = {
+            'tiporespuesta': tiporespuesta,
+            'encabezado': 'Listado Tipo _Respuestas Colegio',
+            'menu': 'Tablas Tipo Respuesta Colegio',
+            'submenu': 'Tablas fijas / Tipo Respuesta Colegio',
+            'titulo': 'Tipo Respuesta Colegio'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editartiporespuesta(request,pk):
+    tiporespuesta = TipoRespuestaColegio.objects.get(id=pk)
+    template_name = 'editar_tiporespuesta.html'
+    data = {
+        'form': TiporespuestacolegioForm(instance=tiporespuesta)
+    }
+
+    if request.method == 'POST':
+        formulario = TiporespuestacolegioForm(data=request.POST, instance=tiporespuesta)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listatiporespuestas')
+        else:
+            data = {
+                'form': TiporespuestacolegioForm(instance=tiporespuesta),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creatiporespuesta(request):
+    template_name = 'editar_tiporespuesta.html'
+    data = {
+        'form': TiporespuestacolegioForm()
+    }
+
+    if request.method == 'POST':
+        formulario = TiporespuestacolegioForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listatiporespuestas")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminartiporespuesta(request,pk):
+    msg = ""
+    tiporespuesta = get_object_or_404(TipoRespuestaColegio,id=pk)
+    template_name = 'vistaTiporespuestacolegio.html'
+
+    try:
+        tiporespuesta.delete()
+        return redirect(to="listatiporespuestas")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+
+class Vista_Responsablesubareanivel(LoginRequiredMixin, ListView):
+    template_name = 'vistaResponsablesubareanivel.html'
+    model = ResponsableSubareaNivel
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual        
+
+        return self.model.objects.filter(subarea__area__colegio__id=colegio_id).order_by('subarea', 'nivel')
+
+    def get(self, request, *args, **kwargs):
+        responsablesubareanivel = self.get_queryset()
+
+        contexto = {
+            'responsablesubareanivel': responsablesubareanivel,
+            'encabezado': 'Listado Responsables SubArea y Nivel',
+            'menu': 'Tablas Responsables SubArea y Nivel',
+            'submenu': 'Tablas fijas / Responsables SubArea y Nivel',
+            'titulo': 'Responsables SubArea y Nivel'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarresponsablesubareanivel(request,pk):
+    responsablesubareanivel = ResponsableSubareaNivel.objects.get(id=pk)
+    template_name = 'editar_responsablesubareanivel.html'
+    data = {
+        'form': ResponsablesubareanivelForm(instance=responsablesubareanivel)
+    }
+
+    if request.method == 'POST':
+        formulario = ResponsablesubareanivelForm(data=request.POST, instance=responsablesubareanivel)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaresponsablesubareaniveles')
+        else:
+            data = {
+                'form': ResponsablesubareanivelForm(instance=responsablesubareanivel),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def crearesponsablesubareanivel(request):
+
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual        
+
+    template_name = 'editar_responsablesubareanivel.html'
+
+    if request.method == 'POST':
+        form = ResponsablesubareanivelForm(request.POST, colegio_id=colegio_id)
+        if form.is_valid():
+            form.save()
+            return redirect(to="listaresponsablesubareaniveles")
+    else:
+        form = ResponsablesubareanivelForm(colegio_id=colegio_id)
+    
+    return render(request, template_name, {'form': form})
+
+@login_required
+def eliminarresponsablesubareanivel(request,pk):
+    msg = ""
+    responsablesubareanivel = get_object_or_404(ResponsableSubareaNivel,id=pk)
+    template_name = 'vistaResponsablesubareanivel.html'
+
+    try:
+        responsablesubareanivel.delete()
+        return redirect(to="listaresponsablesubareaniveles")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+class Vista_Coordinadorciclo(LoginRequiredMixin, ListView):
+    template_name = 'vistaCoordinadorciclo.html'
+    model = CoordinadorCiclo
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual           
+
+        return self.model.objects.filter(ciclo__colegio__id = colegio_id).order_by('persona')
+
+    def get(self, request, *args, **kwargs):
+        coordinadorciclo = self.get_queryset()
+
+        contexto = {
+            'coordinadorciclos': coordinadorciclo,
+            'encabezado': 'Listado Coordinador Ciclo',
+            'menu': 'Tablas Coordinador Ciclo',
+            'submenu': 'Tablas fijas / Coordinador Ciclo',
+            'titulo': 'Coordinador Ciclo'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarcoordinadorciclo(request,pk):
+    coordinadorciclo = CoordinadorCiclo.objects.get(id=pk)
+    template_name = 'editar_coordinadorciclo.html'
+    data = {
+        'form': CoordinadorcicloForm(instance=coordinadorciclo)
+    }
+
+    if request.method == 'POST':
+        formulario = CoordinadorcicloForm(data=request.POST, instance=coordinadorciclo)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listacoordinadorciclos')
+        else:
+            data = {
+                'form': CoordinadorcicloForm(instance=coordinadorciclo),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creacoordinadorciclo(request):
+    template_name = 'editar_coordinadorciclo.html'
+    data = {
+        'form': CoordinadorcicloForm()
+    }
+
+    if request.method == 'POST':
+        formulario = CoordinadorcicloForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listacoordinadorciclos")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarcoordinadorciclo(request,pk):
+    msg = ""
+    coordinadorciclo = get_object_or_404(CoordinadorCiclo,id=pk)
+    template_name = 'vistaCoordinadorciclo.html'
+
+    try:
+        coordinadorciclo.delete()
+        return redirect(to="listacoordinadorciclos")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+class Vista_Profesorjefe(LoginRequiredMixin, ListView):
+    template_name = 'vistaProfesorjefe.html'
+    model = ProfesorJefe
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual           
+
+        return self.model.objects.filter(curso__colegio__id = colegio_id).order_by('persona')
+
+    def get(self, request, *args, **kwargs):
+        profesorjefe = self.get_queryset()
+
+        contexto = {
+            'profesorjefes': profesorjefe,
+            'encabezado': 'Listado Profesor Jefe',
+            'menu': 'Tablas Profesor Jefe',
+            'submenu': 'Tablas fijas / Profesor Jefe',
+            'titulo': 'Profesor Jefe'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarprofesorjefe(request,pk):
+    profesorjefe = ProfesorJefe.objects.get(id=pk)
+    template_name = 'editar_profesorjefe.html'
+    data = {
+        'form': ProfesorjefeForm(instance=profesorjefe)
+    }
+
+    if request.method == 'POST':
+        formulario = ProfesorjefeForm(data=request.POST, instance=profesorjefe)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaprofesorjefes')
+        else:
+            data = {
+                'form': ProfesorjefeForm(instance=profesorjefe),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def creaprofesorjefe(request):
+    template_name = 'editar_profesorjefe.html'
+    data = {
+        'form': ProfesorjefeForm()
+    }
+
+    if request.method == 'POST':
+        formulario = ProfesorjefeForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaprofesorjefes")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarprofesorjefe(request,pk):
+    msg = ""
+    profesorjefe = get_object_or_404(ProfesorJefe,id=pk)
+    template_name = 'vistaProfesorjefe.html'
+
+    try:
+        profesorjefe.delete()
+        return redirect(to="listaprofesorjefes")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+
+class Vista_Responsableasignatura(LoginRequiredMixin, ListView):
+    template_name = 'vistaResponsableasignatura.html'
+    model = ProfesorResponsable
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual         
+
+        return self.model.objects.filter(asignatura__colegio__id = colegio_id).order_by('persona')
+
+    def get(self, request, *args, **kwargs):
+        profesorresponsable = self.get_queryset()
+
+        contexto = {
+            'profesorresponsables': profesorresponsable,
+            'encabezado': 'Listado Responsable Asignatura',
+            'menu': 'Tablas Responsable Asignatura',
+            'submenu': 'Tablas fijas / Responsable Asignatura',
+            'titulo': 'Responsable Asignatura'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarresponsableasignatura(request,pk):
+    profesorresponsable = ProfesorResponsable.objects.get(id=pk)
+    template_name = 'editar_responsableasignatura.html'
+    data = {
+        'form': ResponsableasignaturaForm(instance=profesorresponsable)
+    }
+
+    if request.method == 'POST':
+        formulario = ResponsableasignaturaForm(data=request.POST, instance=profesorresponsable)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaresponsableasignaturas')
+        else:
+            data = {
+                'form': ResponsableasignaturaForm(instance=profesorresponsable),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def crearesponsableasignatura(request):
+    template_name = 'editar_responsableasignatura.html'
+    data = {
+        'form': ResponsableasignaturaForm()
+    }
+
+    if request.method == 'POST':
+        formulario = ResponsableasignaturaForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaresponsableasignaturas")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarresponsableasignatura(request,pk):
+    msg = ""
+    profesorresponsable = get_object_or_404(ProfesorJefe,id=pk)
+    template_name = 'vistaResponsableasignatura.html'
+
+    try:
+        profesorresponsable.delete()
+        return redirect(to="listaresponsableasignaturas")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+
+class Vista_Responsablesuperior(LoginRequiredMixin, ListView):
+    template_name = 'vistaResponsablesuperior.html'
+    model = ResponsableSuperior
+
+    def get_queryset(self, request):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual         
+
+        return self.model.objects.filter(subarea__area__colegio__id = colegio_id).order_by('persona')
+
+    def get(self, request, *args, **kwargs):
+        responsablesuperior = self.get_queryset()
+
+        contexto = {
+            'responsablesuperiores': responsablesuperior,
+            'encabezado': 'Listado Responsable Superior',
+            'menu': 'Tablas Responsable Superior',
+            'submenu': 'Tablas fijas / Responsable Superior',
+            'titulo': 'Responsable Superior'
+        }
+        return render(request, self.template_name, contexto)
+
+@login_required
+def editarresponsablesuperior(request,pk):
+    responsablesuperior = ResponsableSuperior.objects.get(id=pk)
+    template_name = 'editar_responsableasignatura.html'
+    data = {
+        'form': ResponsablesuperiorForm(instance=responsablesuperior)
+    }
+
+    if request.method == 'POST':
+        formulario = ResponsablesuperiorForm(data=request.POST, instance=responsablesuperior)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('listaresponsablesuperiores')
+        else:
+            data = {
+                'form': ResponsablesuperiorForm(instance=responsablesuperior),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
+
+@login_required
+def crearesponsablesuperior(request):
+    template_name = 'editar_responsablesuperior.html'
+    data = {
+        'form': ResponsablesuperiorForm()
+    }
+
+    if request.method == 'POST':
+        formulario = ResponsablesuperiorForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaresponsablesuperiores")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarresponsablesuperior(request,pk):
+    msg = ""
+    responsablesuperior = get_object_or_404(ResponsableSuperior,id=pk)
+    template_name = 'vistaResponsablesuperior.html'
+
+    try:
+        responsablesuperior.delete()
+        return redirect(to="listaresponsablesuperiores")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
+################################## < opciones principales > #######################################
+@login_required
+def cambiarcolegio(request):
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user).first()
+
+    template_name = 'cambio_colegio.html'
+    data = {
+        'form': AccesoColegioForm(instance=accesocolegio)
+    }
+
+    if request.method == 'POST':
+        formulario = AccesoColegioForm(data=request.POST, instance=accesocolegio)
+
+        if formulario.is_valid():
+            formulario.save()
+            return redirect('index')
+        else:
+            data = {
+                'form': AccesoColegioForm(instance=accesocolegio),
+                'msg': 'Ha ocurrido un eror en el formulario revise los datos'
+            }
+            return render(request,template_name,context=data)
+
+    return render(request,template_name, data)
 ############################################ < xanex > ############################################
 
 def about(request):

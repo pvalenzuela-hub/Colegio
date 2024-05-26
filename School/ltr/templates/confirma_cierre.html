@@ -1,0 +1,77 @@
+{% extends 'components/versions/vertical/light_externo.html' %}
+{% load static%}
+{% block body %}
+<div class="page-header"></div>
+    <div>
+        <h1 class="page-title">Confirma Cierre definitivo de Caso N° {{ ticket.numticket}}</h1>
+    </div>
+</div>
+<div class="row" id="user-profile">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="wideget-user">
+                    <div class="row">
+                        <div class="col-lg-12 col-md-12 col-xl-6">
+                            <form id="respuesta" action="{% url 'confirmacierrecaso' %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="idticket" id="idticket" value="{{ ticket.id }}">
+                                <div>
+                                    <div>
+                                        {% if ticket.estadoticket_id < 5 %}
+                                            <div>
+                                               
+                                                <label class="form-label" for="persona">Elija su nombre de la lista</label><span class="required-input">*</span>
+                                                <select class="form-control" id="persona" name="persona" required="">
+                                                    <option value="" selected disabled>---------</option>
+                                                    {% for m in personascierres %}
+                                                        <option value="{{ m.id }}">{{ m.nombre }}{{ m.apellido }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                               
+                                            </div>
+                                            <div>
+                                                
+                                                <label class="form-label" for="motivocierre">Elija una de los siguientes motivos de cierre de Caso</label><span class="required-input">*</span>
+                                                <select class="form-control" id="motivocierre" name="motivocierre" required="">
+                                                    <option value="" selected disabled>---------</option>
+                                                    {% for m in motivos %}
+                                                        <option value="{{ m.id }}">{{ m.nombre }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                               
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <h1><strong>Estado del Caso: {{ ticket.estadoticket.nombre }}</strong></h1>
+                                        </div>
+                                        <div class="btn-list ms-auto boton">
+                                            <table>
+                                                <tr>
+                                                    <td>
+                                                        {% if ticket.estadoticket_id < 5 %}
+                                                            <button type="submit" class="btn btn-danger btn-space"
+                                                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">CONFIRMAR CIERRE DE CASO</button>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td></td>
+                                                    <td style="border-radius: 4px;" bgcolor="#004A99">
+                                                        <a href="http://127.0.0.1:8000/cierrapantalla" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">CERRAR</a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+{% endblock body %}
+</html>

@@ -111,8 +111,7 @@
 												<option value="">Seleccione un emisor...</option>
 												{% for dest in destinatarios %}
 												<option value="{{ dest.id }}" data-nombre="{{ dest.nombre }}"
-													data-cargo="{{ dest.cargo }}" data-correo="{{ dest.correo }}">{{
-													dest.nombre }}</option>
+													data-cargo="{{ dest.cargo }}" data-correo="{{ dest.correo }}">{{ dest.nombre }}</option>
 												{% endfor %}
 											</select>
 										</td>

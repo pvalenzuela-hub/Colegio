@@ -107,15 +107,19 @@
                 </p>
 
                 <p class="textos">Tipo contacto : {{ ticket.tipocontacto.nombre }}<br>
-                    Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre
-                    }}<br>
+                    Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre }}<br>
                 </p>
 
                 <p class="textos"><strong>MENSAJE</strong><br>
                     {{ ticket.motivo }}
                 </p>
                 {% else %}
-                <p class="textos">{{ message }}</p>
+                    <p class="textos" style="text-align: center;"><strong>Caso N° :</strong> {{ ticket.numticket }}</p>
+                    <p class="textos" style="text-align: center;"><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</p>
+                    <p class="textos" style="text-align: center;"><strong>Area :</strong> {{ ticket.subarea.area.nombre }}</p>
+                    <p class="textos" style="text-align: center;"><strong>Sub Area :</strong> {{ ticket.subarea.nombre }}</p>
+                    <p class="textos" style="text-align: center;"><strong>Correo :</strong> {{ ticket.correo }}</p><br>
+                    <p class="textos" style="text-align: center;"><strong>Respuesta :</strong> {{ message  }}</p>
                 {% endif %}
                 <table width="100%" cellspacing="0" cellpadding="0">
                     <tr>
@@ -136,8 +140,15 @@
                 </table>
                 <p class="footer">Recuerda que debes responder al apoderado haciendo click en el botón azul, de lo
                     contrario, tu respuesta no quedará registrada en el sistema y el caso permanecerá abierto a espera
-                    de tu respuesta.</p>
-
+                    de tu respuesta.
+                </p>
+                {% if ticketnuevo == 0 %}
+                    <br><br>
+                    <p>
+                        Para ver el historial del caso haz click<a href="http://127.0.0.1:8000/caso/{{ ticket.id }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: blue; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">aquí</a><br>                    
+                        Para cerrar el caso dsefinitivamente haz clic<a href="http://127.0.0.1:8000/consultacierrecaso/{{ ticket.id }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: red; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">aquí</a>
+                    </p>
+                {% endif %}
             </div>
         </div>
     </div>

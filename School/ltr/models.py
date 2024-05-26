@@ -7,6 +7,8 @@ from datetime import date
 class Colegio(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
+    setting_name = models.CharField(max_length=10, default="")
+  
 
     def __str__(self):
         return self.nombre
@@ -64,7 +66,7 @@ class Personas(models.Model):
     colegio = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING,default=1)
 
     def __str__(self):
-        return self.nombre+' - '+str(self.esprofe)
+        return self.nombre
 
     class Meta:
         ordering = ["esprofe","nombre"]
@@ -76,7 +78,7 @@ class Ciclos(models.Model):
     colegio = models.ForeignKey(Colegio,on_delete=models.CASCADE, default=1)
 
     def __str__(self):
-        return self.nombre+' '+str(self.colegio)
+        return self.nombre
 
     class Meta:
         ordering = ["id"]
@@ -89,10 +91,10 @@ class Nivel(models.Model):
     orden = models.IntegerField()
 
     def __str__(self):
-        return self.nombre+' - '+str(self.ciclo)
+        return self.nombre
 
     class Meta:
-        ordering = ["ciclo","orden"]
+        ordering = ["orden"]
         db_table = 'Nivel'        
 
 class ResponsableSubareaNivel(models.Model):
@@ -152,7 +154,7 @@ class Curso(models.Model):
     orden = models.IntegerField(default=1)
 
     def __str__(self):
-        return self.nombre+' COLEGIO: '+str(self.colegio)
+        return self.nombre
 
     class Meta:
         ordering = ["colegio","orden"]
@@ -197,6 +199,17 @@ class ProfesorJefe(models.Model):
         ordering = ['id']
         db_table = 'ProfesorJefe'
 
+class Motivocierre(models.Model):
+    id = models.AutoField(primary_key=True)
+    nombre = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        ordering = ['id']
+        db_table = 'MotivoCierre'
+
 class Ticket(models.Model):
     id = models.AutoField(primary_key=True)
     fechacreacion = models.DateTimeField(auto_now_add=True)
@@ -217,6 +230,19 @@ class Ticket(models.Model):
     asignatura = models.ForeignKey(Asignatura, on_delete=models.DO_NOTHING,default=1)
     fechaprimerenvio = models.DateTimeField(null=True,blank=True)
     fechaprimerarespuesta = models.DateTimeField(null=True,blank=True)
+    numticket = models.IntegerField(default=0)
+    personacierre = models.ForeignKey(Personas, on_delete=models.DO_NOTHING)
+    motivocierre = models.ForeignKey(Motivocierre, on_delete=models.DO_NOTHING,null=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Verifica si el objeto es nuevo
+            last_ticket = Ticket.objects.filter(subarea__area__colegio=self.subarea.area.colegio).order_by('-numticket').first()
+            if last_ticket:
+                self.numticket = last_ticket.numticket + 1
+            else:
+                self.numticket = 1
+
+        super(Ticket, self).save(*args, **kwargs)
 
     def __str__(self):
         return str(self.id)+':'+self.fechacreacion.strftime('%d/%m/%Y')+' - '+self.nombre+' '+self.apellido
@@ -281,7 +307,7 @@ class Seguimiento(models.Model):
 
 class TipoRespuestaColegio(models.Model):
     id = models.AutoField(primary_key=True)
-    nombre = models.CharField(max_length=80)
+    nombre = models.CharField(max_length=100)
 
     def __str__(self):
         return self.nombre
@@ -308,3 +334,19 @@ class Mensaje(models.Model):
     class Meta:
         ordering = ['fechora']
         db_table = 'Mensajes'
+
+class AccesoColegio(models.Model):
+    id = models.AutoField(primary_key=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    colegiodefault = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='default_acceso_colegio')
+    colegioactual = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='actual_acceso_colegio')
+        
+
+    def __str__(self):
+        return str(self.user)
+    
+    class Meta:
+        ordering = ['user']
+        db_table = 'AccesoColegio'
+
+

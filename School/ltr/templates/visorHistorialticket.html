@@ -1,0 +1,374 @@
+{% extends 'components/versions/vertical/light_externo.html' %}
+{% load static%}
+
+{% load tz %}
+{% load humanize %}
+{% block styles %}
+<style>
+    .mi-tabla tbody tr {
+        display: table-column;
+        padding: 0;
+        margin: 0;
+        left: 0;
+        line-height: 1.5;
+        width: 600px;
+        /* Ajustar según sea necesario */
+    }
+
+    .texto {
+        font-size: medium;
+        width: 100px;
+    }
+
+    .a-md-flex img {
+        
+        
+        display: inline-flex !important;
+        width: 160px;
+    }
+</style>
+
+{% endblock styles %}
+{% block body %}
+<!-- PAGE-HEADER -->
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Seguimiento del Caso</h1>
+    </div>
+    <div class="ms-auto pageheader-btn">
+        <!-- <a href="#" class="btn btn-success btn-icon text-white">
+									<span>
+										<i class="fe fe-log-in"></i>
+									</span> Editar Datos
+								</a> -->
+    </div>
+</div>
+<!-- PAGE-HEADER END -->
+
+<!-- ROW-1 OPEN -->
+<div class="row" id="user-profile">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="wideget-user">
+                    <div class="row">
+                        <div class="col-lg-12 col-md-12 col-xl-6">
+                            <div class="wideget-user-desc d-flex">
+                                <!-- <div class="wideget-user-desc d-flex"></div> -->
+                                <div class="wideget-user-img">
+                                    <!-- <img class="" src="{% static ''%}assets/images/users/8.jpg" alt="img"> -->
+                                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" height="150px">
+                                </div>
+                                <div>
+                                    <table style="color: #21529b">
+                                        <br><br>
+                                        <tr>
+                                            <td></td>
+                                            <td>
+
+                                            </td>
+                                            <td>
+                                                <h4>Caso N° {{ ticket.numticket }}</h4>
+                                            </td>
+                                        </tr>
+                                        <tr><td></td>
+                                            <td>
+
+                                            </td>
+                                            <td>
+                                                <h4>Fecha de Ingreso {{ ticket.fechacreacion|date:"d/m/Y" }}</h4>
+                                            </td>
+                                        </tr>
+                                        <tr><td></td>
+                                            <td>
+
+                                            </td>
+                                            <td>
+                                                <h4>Tiempo de espera en días: {{ diastotalespera }}</h4>
+                                            </td>
+                                        </tr>
+                                        <tr><td></td>
+                                            <td>
+
+                                            </td>
+                                            <td>
+                                                <h4>Estado actual: {{ ticket.estadoticket.nombre }}</h4>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                       
+                    </div>
+                </div>
+            </div>
+            <div class="border-top">
+                <div class="wideget-user-tab">
+                    <div class="tab-menu-heading">
+                        <div class="tabs-menu1">
+                            <ul class="nav">
+                                <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Descripción</a>
+                                </li>
+                                <li><a href="#tab-61" data-bs-toggle="tab" class="">Seguimiento</a></li>
+                                <li><a href="#tab-71" data-bs-toggle="tab" class="">Responsable</a></li>
+                                <!-- <li><a href="#tab-81" data-bs-toggle="tab" class="">Tareas</a></li> -->
+
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-content">
+            <div class="tab-pane active show" id="tab-51">
+                <div id="profile-log-switch">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="media-heading">
+                                <!-- <h5><strong>Personal Information</strong></h5> -->
+                            </div>
+                            <div class="table-responsive ">
+                                <table class="table row table-borderless" line-height="1">
+                                    
+                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                        <tr>
+                                            <td><strong>Caso N° :</strong> {{ ticket.numticket }}</td>
+                                            <td><strong>Fecha ingreso :</strong>{{ ticket.fechacreacion|date:"d/m/Y" }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tiempo espera total :</strong> {{ diastotalespera }} días</td>
+                                            <td><strong>Estado :</strong> {{ ticket.estadoticket.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Fecha estado actual :</strong> {{ ticket.fechahoracambioestado|date:"d/m/Y" }}</td>
+                                            <td><strong>Tiempo espera estado actual :</strong> {{ diascambioestado }} días
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>DATOS APODERADO</strong></td>
+                                        <tr>
+                                            <td><strong>Nombre :</strong>{{ ticket.nombre }}</td>
+                                            <td><strong>Apellidos :</strong>{{ ticket.apellido }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Correo :</strong>{{ ticket.correo }}</td>
+                                            <td><strong>Fono :</strong>{{ ticket.telefono }}</td>
+                                        </tr>
+                                        <td><strong>DATOS ALUMNO</strong></td>
+                                        <tr>
+                                            <td><strong>Nombre :</strong>{{ ticket.nombrealumno }}</td>
+                                            <td><strong>Apellidos :</strong>{{ ticket.apellidoalumno }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Nivel :</strong>{{ ticket.nivel.nombre }}</td>
+                                            <td><strong>Curso :</strong>{{ ticket.curso.nombre }}</td>
+                                        </tr>
+
+                                        </tr>
+                                    </tbody>
+                                    <tbody class="col-lg-12 col-xl-6 p-0">
+                                        <tr>
+                                            <td><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tema contacto :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Sub-tema contacto :</strong> {{ ticket.subarea.nombre }} </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Detalle:</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="texto"><textarea name="" id="" cols="60" rows="4"
+                                                    readonly>{{ ticket.motivo }}</textarea></td>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane" id="tab-61">
+                <!-- <ul class="widget-users row  mb-5"> -->
+                <div class="row row-sm">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Historial de conversaciones</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <div class="col-lg-12">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h4 class="card-title fw-semibold ">Actividades</h4>
+                                            </div>
+                                            <div class="card-body col-lg-12">
+                                                <ul class="task-list">
+                                                    <li>
+                                                        <i class="task-icon bg-secondary"></i>
+                                                        <h6>
+                                                            {{ticket.nombre}} {{ticket.apellido}}<span class="text-muted fs-11 ms-2">
+                                                                {{ ticket.fechacreacion|date:"d/M/Y"}}
+                                                            </span>
+                                                        </h6>
+                                                        <p class="text-muted fs-14">{{ticket.motivo}} - <a href="#"
+                                                            class="fw-semibold">{{ticket.fechacreacion|time:"H:i"}}</a></p>
+                                                    </li>
+
+                                                    {% for s in segs %}
+
+                                                    <li>
+                                                        <i class="task-icon bg-secondary"></i>
+                                                        <!-- <i class="task-icon bg-primary"></i> -->
+                                                        <h6>
+                                                            {{s.correoemisor}}<span
+                                                                class="text-muted fs-11 ms-2">{{s.fechora|date:"d/M/Y"}}</span>
+                                                        </h6>
+                                                        <p class="text-muted fs-14">{{s.message}} - <a href="#"
+                                                                class="fw-semibold">{{s.fechora|time:"H:i"}}</a></p>
+                                                    </li>
+                                                    {% endfor %}
+                                                    </br></br>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--daily-->
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                
+                            </div>
+                            <div class="card-body">
+                               
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- </ul> -->
+            </div>
+            <!--end tab61-->
+
+            <div class="tab-pane" id="tab-71">
+                <ul class="widget-users row  mb-5">
+                    <div class="row row-sm">
+                        <div class="col-lg-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Responsable</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive ">
+                                        <table class="table row table-borderless" line-height="1">
+                                            
+                                            <tbody class="col-lg-12 col-xl-6 p-0">
+                                                <tr>
+                                                    <td><strong>Area Responsable :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                                    <td><strong>Tema : </strong>{{ ticket.subarea.nombre }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>RESPONSABLE (SubArea y Nivel)</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong>{{ responsablearea.nombre }}</td>
+                                                    <td><strong>Correo : </strong>{{ responsablearea.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Teléfono : </strong>{{ responsablearea.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>COORDINADOR CICLO</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong> {{ responsableciclo.nombre }}</td>
+                                                    <td><strong>Correo : </strong> {{ responsableciclo.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Teléfono : </strong> {{ responsableciclo.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+
+                                                <tr>
+                                                    <td><strong>RESPONSABLE SUPERIOR</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre :</strong>{{ responsablesuperrior.nombre }}</td>
+                                                    <td><strong>Correo :</strong>{{ responsablesuperrior.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Teléfono :</strong>{{ responsablesuperrior.telefono }}
+                                                    </td>
+                                                </tr>
+                                                </tr>
+                                            </tbody>
+                                            <tbody class="col-lg-12 col-xl-6 p-0">
+                                                <tr>
+                                                    <td><strong>RESPONSABLE ASIGNATURA</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong>{{ responsableasignatura.nombre }}</td>
+                                                    <td><strong>Correo : </strong>{{ responsableasignatura.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Teléfono : </strong>{{ responsableasignatura.telefono }}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>PROFESOR JEFE</strong></td>
+                                                <tr>
+                                                    <td><strong>Nombre : </strong>{{ profesorjefe.nombre }}</td>
+                                                    <td><strong>Correo : </strong>{{ profesorjefe.correo }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <strong>Teléfono : </strong>{{ profesorjefe.telefono }}
+                                                    </td>
+                                                </tr>
+
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ul>
+            </div>
+            <!--end tab71-->
+            
+            <!--end tab81-->
+
+
+
+        </div><!-- COL-END -->
+    </div>
+    <!--row-->
+
+
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+    {% endblock body %}
+
+    {% block scripts %}
+
+
+  
+
+
+    {% endblock scripts %}

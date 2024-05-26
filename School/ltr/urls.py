@@ -16,26 +16,37 @@ Including another URLconf
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path
-from . views import PasswordsChangeView, password_success, Registrouser
+from . views import PasswordsChangeView, password_success, Registrouser, Vista_Personas, Vista_Ciclos, Vista_Colegios, Vista_Niveles, Vista_Cursos,Vista_Areas,Vista_Subareas,Vista_Tiporespuesta, Vista_Responsablesubareanivel, Vista_Coordinadorciclo, Vista_Profesorjefe, Vista_Responsableasignatura, Vista_Responsablesuperior, VisorHistorialcaso
 from . import views
 from django.contrib.auth.views import LoginView, LogoutView
 
 
 urlpatterns = [
+    ####################### ERROR ###################################
+    # path('errorcorreo', views.error_correo, name = 'errorcorreo'),
+
+    #########################################################
     path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     #path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
     path('formulario_respuesta_colegio/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_colegio, name='formulario_respuesta_colegio'),
     path('formulario_respuesta_apoderado/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_apoderado, name='formulario_respuesta_apoderado'),
+   
+    ###################### formulario de registro de ticket ############################
     path('registroticket', views.registroticket, name='registroticket'),
+    path('registrocasos', views.registrocasos, name='registrocasos'),
+
+    ###################################################################################
+
     path('ajax/cargar-subareas/', views.cargar_subareas, name='ajax_cargar_subareas'),
     path('creaticket', views.creaticket, name = 'crearticket'),
     path('index', views.Index.as_view(),name="index"),
     
-    
     path('', views.Index.as_view(),name="index"),
     path('listacasos', views.Listadocasos.as_view(), name='lista-casos'),
+    
     path("<int:pk>", views.VisorTicket.as_view(), name="visor-ticket"),
+    
     path('ticket/guardacomentario', views.guardacomentario,name="graba-comentario"),
     path('respuestacolegio', views.respuesta_colegio, name = 'respuesta_colegio'),
     path('respuestaapoderado', views.respuesta_apoderado, name = 'respuesta_apoderado'),
@@ -45,7 +56,11 @@ urlpatterns = [
     path('api/tiempopromedio', views.chart_tpromedioprimrespuesta, name = 'chart2'),
     path('api/casotipocontacto', views.chart_casostipocontacto, name = 'chart3'),
     path('reportedirectorio', views.reporte_directorio, name = 'reportedirectorio'),
-# ########################################################################################################    
+##############################< interfaz usuarios externos >###############################################
+    path('consultacierrecaso/<int:pk>', views.consulta_cierre_caso, name = 'consultacierrecaso'),
+    path('confirmacierrecaso', views.confirma_cierre_caso, name = 'confirmacierrecaso'),
+    path("caso/<int:pk>", views.VisorHistorialcaso.as_view(), name="visorhistorialcaso"),
+    path('cierrapantalla', views.cierrapantalla, name = 'cierrapantalla'),
 #####################################< control de usuarios >###############################################
     path('login/', LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
@@ -75,9 +90,56 @@ urlpatterns = [
 # #####< PRUEBAS >##################################################################################    
 
 
-##############< TABLAS > ###########################################################################
+############################################ < TABLAS > ###########################################
+    path('listapersonas', Vista_Personas.as_view(), name='listapersonas'),
+    path('editpersona/<int:pk>', views.editarpersona, name='editar-persona'),
+    path('creapersona/', views.creapersona,  name='crea-persona'),
+    path('listaciclos', Vista_Ciclos.as_view(), name='listaciclos'),
+    path('editciclo/<int:pk>', views.editarciclo, name='editar-ciclo'),
+    path('listacolegios', Vista_Colegios.as_view(), name='listacolegios'),
+    path('editcolegio/<int:pk>', views.editarcolegio, name='editar-colegio'),
+    path('listaniveles', Vista_Niveles.as_view(), name='listaniveles'),
+    path('editnivel/<int:pk>', views.editarnivel, name='editar-nivel'),
+    path('creanivel/', views.creanivel, name='crea-nivel'),
+    path('eliminarnivel/<int:pk>', views.eliminarnivel, name='eliminar-nivel'),
+    path('listacursos', Vista_Cursos.as_view(), name='listacursos'),
+    path('editcurso/<int:pk>', views.editarcurso, name='editar-curso'),
+    path('creacurso/', views.creacurso, name='crea-curso'),
+    path('eliminarcurso/<int:pk>', views.eliminarcurso, name='eliminar-curso'),
+    path('listaareas', Vista_Areas.as_view(), name='listaareas'),
+    path('editarea/<int:pk>', views.editararea, name='editar-area'),
+    path('creaarea/', views.creaarea, name='crea-area'),
+    path('eliminararea/<int:pk>', views.eliminararea, name='eliminar-area'),
+    path('listasubareas', Vista_Subareas.as_view(), name='listasubareas'),
+    path('editsubarea/<int:pk>', views.editarsubarea, name='editar-subarea'),
+    path('creasubarea/', views.creasubarea, name='crea-subarea'),
+    path('eliminarsubarea/<int:pk>', views.eliminarsubarea, name='eliminar-subarea'),
+    path('listatiporespuesta', Vista_Tiporespuesta.as_view(), name='listatiporespuestas'),
+    path('edittiporespuesta/<int:pk>', views.editartiporespuesta, name='editar-tiporespuesta'),
+    path('creatiporespuesta/', views.creatiporespuesta, name='crea-tiporespuesta'),
+    path('eliminartiporespuesta/<int:pk>', views.eliminartiporespuesta, name='eliminar-tiporespuesta'),
+    path('listaresponsablesubareanivel', Vista_Responsablesubareanivel.as_view(), name='listaresponsablesubareaniveles'),
+    path('editresponsablesubareanivel/<int:pk>', views.editarresponsablesubareanivel, name='editar-responsablesubareanivel'),
+    path('crearesponsablesubareanivel/', views.crearesponsablesubareanivel, name='crea-responsablesubareanivel'),
+    path('eliminarresponsablesubareanivel/<int:pk>', views.eliminarresponsablesubareanivel, name='eliminar-responsablesubareanivel'),
+    path('listacoordinadorciclo', Vista_Coordinadorciclo.as_view(), name='listacoordinadorciclos'),
+    path('editcoordinadorciclo/<int:pk>', views.editarcoordinadorciclo, name='editar-coordinadorciclo'),
+    path('creacoordinadorciclo/', views.creacoordinadorciclo, name='crea-coordinadorciclo'),
+    path('eliminarcoordinadorciclo/<int:pk>', views.eliminarcoordinadorciclo, name='eliminar-coordinadorciclo'),
+    path('listaprofesorjefe', Vista_Profesorjefe.as_view(), name='listaprofesorjefes'),
+    path('editprofesorjefe/<int:pk>', views.editarprofesorjefe, name='editar-profesorjefe'),
+    path('creaprofesorjefe/', views.creaprofesorjefe, name='crea-profesorjefe'),
+    path('eliminarprofesorjefe/<int:pk>', views.eliminarprofesorjefe, name='eliminar-profesorjefe'),
+    path('listaresponsableasignatura', Vista_Responsableasignatura.as_view(), name='listaresponsableasignaturas'),
+    path('editresponsableasignatura/<int:pk>', views.editarresponsableasignatura, name='editar-responsableasignatura'),
+    path('crearesponsableasignatura/', views.crearesponsableasignatura, name='crea-responsableasignatura'),
+    path('eliminarresponsableasignatura/<int:pk>', views.eliminarresponsableasignatura, name='eliminar-responsableasignatura'),
+    path('listaresponsablesuperior', Vista_Responsablesuperior.as_view(), name='listaresponsablesuperiores'),
+    path('editresponsablesuperior/<int:pk>', views.editarresponsablesuperior, name='editar-responsablesuperior'),
+    path('crearesponsablesuperior/', views.crearesponsablesuperior, name='crea-responsablesuperior'),
+    path('eliminarresponsablesuperior/<int:pk>', views.eliminarresponsablesuperior, name='eliminar-responsablesuperior'),
+    path('cambiarcolegio', views.cambiarcolegio, name='cambiarcolegio'),
 
-   
 ###################################################< Zanex >######################################
 
     # path("", views.Index, name='index'),

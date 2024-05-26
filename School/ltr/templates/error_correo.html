@@ -1,0 +1,35 @@
+{% extends 'components/custom-base.html' %}
+{% load static%}
+
+		{% block customstyles %}
+		{% endblock customstyles %}
+
+		{% block body %}
+		<!-- PAGE -->
+		<div class="page">
+		   <!-- PAGE-CONTENT OPEN -->
+			<div class="page-content error-page error2">
+				<div class="container text-center">
+					<div class="error-template">
+						<h1 class="display-1 text-dark mb-2"><span class="fs-20">No fue posible enviar Correo</span></h1>
+						<h5 class="error-details text-dark">
+							{{ msg }}
+						</h5>
+						<div class="text-center">
+							<a class="btn btn-primary mt-5 mb-5" href="index"> <i class="fa fa-long-arrow-left"></i> Home </a>
+						</div>
+                        <div class="text-center">
+							<a class="btn btn-primary mt-5 mb-5" href="{% url 'visor-ticket' ticketid %}"> <i class="fa fa-long-arrow-left"></i> Volver al Caso </a>
+						</div>
+
+                    </div>
+				</div>
+			</div>
+			<!-- PAGE-CONTENT OPEN CLOSED -->
+		</div>
+		<!-- End PAGE -->
+		{% endblock body %}
+					
+		{% block customscripts %}
+		{% endblock customscripts %}
+

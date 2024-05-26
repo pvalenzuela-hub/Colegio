@@ -9,7 +9,7 @@
         <!-- PAGE-HEADER -->
         <div class="page-header">
             <div>
-                <h1 class="page-title">Tickets</h1>
+                <h1 class="page-title">Casos</h1>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="#">Resumen</a></li>
                 </ol>
@@ -92,10 +92,11 @@
                             <div class="tab-menu-heading">
                                 <div class="tabs-menu1">
                                     <ul class="nav">
-                                        <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Nuevo</a></li>
-                                        <li><a href="#tab-61" data-bs-toggle="tab" class="">Esperando Respuesta</a></li>
-                                        <li><a href="#tab-71" data-bs-toggle="tab" class="">Esperando Acción</a></li>
-                                        <li><a href="#tab-81" data-bs-toggle="tab" class="">Cerrado</a></li>
+                                        <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Nuevos</a></li>
+                                        <li><a href="#tab-61" data-bs-toggle="tab" class="">Primera Respuesta</a></li>
+                                        <li><a href="#tab-71" data-bs-toggle="tab" class="">Conversación Colegio</a></li>
+                                        <li><a href="#tab-81" data-bs-toggle="tab" class="">Conversación Apoderado</a></li>
+                                        <li><a href="#tab-91" data-bs-toggle="tab" class="">Cerrado</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -109,14 +110,14 @@
                                 <div class="col-lg-12">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h3 class="card-title">Tickets Nuevos</h3>
+                                            <h3 class="card-title">Casos Nuevos</h3>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
                                                 <table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
                                                     <thead>
                                                         <tr align="center">
-                                                            <th class="wd-15p border-bottom-0">Ticket N°</th>
+                                                            <th class="wd-15p border-bottom-0">Caso N°</th>
                                                             <th class="wd-15p border-bottom-0">Tipo Contacto</th>
                                                             <th class="wd-20p border-bottom-0">Tema Contacto</th>
                                                             <th class="wd-20p border-bottom-0">Nivel/Curso</th>
@@ -127,7 +128,7 @@
                                                     <tbody>
                                                         {% for nuevo in nuevos %}
                                                             <tr>
-                                                                <td align="center">{{ nuevo.id }}</td>
+                                                                <td align="center">{{ nuevo.numticket }}</td>
                                                                 <td align="center" style="color:{{ nuevo.tipocontacto.color }} "><strong>{{ nuevo.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
@@ -163,20 +164,22 @@
                         </ul>
 
                     </div>
+
+                    
                     <div class="tab-pane" id="tab-61">
                         <ul class="widget-users row  mb-5">
                             <div class="row row-sm">
                                 <div class="col-lg-12">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h3 class="card-title">Esperando Respuesta del Colegio</h3>
+                                            <h3 class="card-title">Esperando Primera Respuesta del Colegio</h3>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
                                                 <table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
                                                     <thead>
                                                         <tr align="center">
-                                                            <th class="wd-15p border-bottom-0">Ticket N°</th>
+                                                            <th class="wd-15p border-bottom-0">Caso N°</th>
                                                             <th class="wd-15p border-bottom-0">Tipo Contacto</th>
                                                             <th class="wd-20p border-bottom-0">Tema Contacto</th>
                                                             <th class="wd-20p border-bottom-0">Nivel/Curso</th>
@@ -185,9 +188,9 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {% for resp in respuestas %}
+                                                        {% for resp in primeraresp %}
                                                             <tr>
-                                                                <td align="center">{{ resp.id }}</td>
+                                                                <td align="center">{{ resp.numticket }}</td>
                                                                 <td align="center" style="color:{{ resp.tipocontacto.color }} "><strong>{{ resp.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
@@ -228,7 +231,7 @@
                                 <div class="col-lg-12">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h3 class="card-title">Esperando Acción Ejecutiva</h3>
+                                            <h3 class="card-title">Conversación Colegio</h3>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
@@ -244,9 +247,9 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {% for acc in acciones %}
+                                                        {% for acc in convercolegio %}
                                                             <tr>
-                                                                <td align="center">{{ acc.id }}</td>
+                                                                <td align="center">{{ acc.numticket }}</td>
                                                                 <td align="center" style="color:{{ acc.tipocontacto.color }} "><strong>{{ acc.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
@@ -288,7 +291,7 @@
                                 <div class="col-lg-12">
                                     <div class="card">
                                         <div class="card-header">
-                                            <h3 class="card-title">Tickets Cerrados</h3>
+                                            <h3 class="card-title">Conversación Apoderado</h3>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
@@ -304,9 +307,9 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {% for cerr in cerrados %}
+                                                        {% for cerr in converapoderado %}
                                                             <tr>
-                                                                <td align="center">{{ cerr.id }}</td>
+                                                                <td align="center">{{ cerr.numticket }}</td>
                                                                 <td align="center" style="color:{{ cerr.tipocontacto.color }} "><strong>{{ cerr.tipocontacto.nombre }}</strong> </td>
                                                                 <td>
                                                                     <div class="d-flex">
@@ -342,6 +345,66 @@
                         </ul>
 
                     </div> <!--end tab81-->
+                    <div class="tab-pane" id="tab-91">
+                        <ul class="widget-users row  mb-5">
+                            <div class="row row-sm">
+                                <div class="col-lg-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Cerrados</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
+                                                    <thead>
+                                                        <tr align="center">
+                                                            <th class="wd-15p border-bottom-0">Ticket N°</th>
+                                                            <th class="wd-15p border-bottom-0">Tipo Contacto</th>
+                                                            <th class="wd-20p border-bottom-0">Tema Contacto</th>
+                                                            <th class="wd-20p border-bottom-0">Nivel/Curso</th>
+                                                            <th class="wd-20p border-bottom-0">Fecha Ingreso</th>
+                                                            <th class="wd-20p border-bottom-0">Visor</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for cerr in cerrado %}
+                                                            <tr>
+                                                                <td align="center">{{ cerr.numticket }}</td>
+                                                                <td align="center" style="color:{{ cerr.tipocontacto.color }} "><strong>{{ cerr.tipocontacto.nombre }}</strong> </td>
+                                                                <td>
+                                                                    <div class="d-flex">
+                                                                        <div class="ms-2 mt-0 mt-sm-2 d-block">
+                                                                            <h6 class="mb-0 fs-14 fw-semibold">{{ cerr.subarea.nombre }}</h6>
+                                                                            <span class="fs-12 text-muted">{{cerr.subarea.area }}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="d-flex">
+                                                                        <div class="ms-2 mt-0 mt-sm-2 d-block">
+                                                                            <h6 class="mb-0 fs-14 fw-semibold">{{ cerr.nivel.nombre }}</h6>
+                                                                            <span class="fs-12 text-muted">{{cerr.curso.nombre }}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="text-muted fs-15 fw-semibold">{{cerr.fechacreacion|date:"d/m/Y"}}</td>
+
+                                                                <td align="center" class="">
+                                                                    <a class="btn-primary btn" href="{% url 'visor-ticket' cerr.id %}"><i class="fa fa-address-card-o fa-2x"></i></a>
+                                                                </td>
+
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </ul>
+
+                    </div> <!--end tab91-->
 
 
             </div><!-- COL-END -->

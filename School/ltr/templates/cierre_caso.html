@@ -1,0 +1,25 @@
+{% extends 'components/custom-base.html' %}
+{% load static%}
+
+		{% block customstyles %}
+		{% endblock customstyles %}
+
+		{% block body %}
+		<!-- PAGE -->
+		<div class="page">
+		   <!-- PAGE-CONTENT OPEN -->
+			<div class="page-content error-page error2">
+				<div class="container text-center">
+					<div class="error-template">
+						<h1><span>Caso N° {{ ticket.numticket }} ha sido Cerrado.</span></h1>
+                    </div>
+				</div>
+			</div>
+			<!-- PAGE-CONTENT OPEN CLOSED -->
+		</div>
+		<!-- End PAGE -->
+		{% endblock body %}
+					
+		{% block customscripts %}
+		{% endblock customscripts %}
+

@@ -158,12 +158,28 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # SMTP Configuration
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'bienestar@colegiolaabadia.cl'
-EMAIL_HOST_PASSWORD = 'bridge2024'
+
+EMAIL_BACKENDS = {
+    'correo1': {
+        'EMAIL_BACKEND' : 'django.core.mail.backends.smtp.EmailBackend',
+        'EMAIL_HOST' : 'smtp.gmail.com',
+        'EMAIL_PORT' : 587,
+        'EMAIL_USE_TLS' : True,
+        'EMAIL_HOST_USER' : 'bienestar@colegiolaabadia.cl',
+        'EMAIL_HOST_PASSWORD' : 'bridge2024',
+    },
+    'correo2': {
+        'EMAIL_BACKEND' : 'django.core.mail.backends.smtp.EmailBackend',
+        'EMAIL_HOST' : 'smtp.gmail.com',
+        'EMAIL_PORT' : 587,
+        'EMAIL_USE_TLS' : True,
+        'EMAIL_HOST_USER' : 'negocio.paulo@gmail.com',
+        'EMAIL_HOST_PASSWORD' : 'jpfr glyl pgcv gayx',
+
+    }
+}
+
+
 
 # LOGGING = {
 #     'version': 1,

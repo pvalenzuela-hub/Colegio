@@ -44,8 +44,12 @@
             <div class="content">
 
                 <div style="text-align: center;">
-                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg"
-                        alt="logo" class="logo">
+                    {% if colegio.id == 1 %}
+                        <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
+                    {% endif %}
+                    {% if colegio.id == 2 %}
+                        <img src="{% static ''%}assets/images/brand/logo.png" class="header-brand-img" alt="" class="logo">
+                    {% endif %}                        
                 </div>
                 <br><br>
                 <div class="titulo">
