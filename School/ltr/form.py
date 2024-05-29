@@ -79,13 +79,28 @@ class CiclosForm(ModelForm):
 class ColegiosForm(ModelForm):
     class Meta:
         model = Colegio
-        fields = ["nombre"]
+        fields = ["nombre","logoprincipal","logofirma"]
 
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Colegio...'}),
+            'logoprincipal': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Logo principal...'}),
+            'logofirma': forms.TextInput(attrs={'class': 'form-control','placeholder': 'Logo firma...'}),
+        }
+
+        labels = {
+            'nombre': 'Nombre del Colegio',
+            'logoprincipal': 'Logo Principal',
+            'logofirma': 'Logo Firma',
         }
 
 class NivelesForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        colegio_id = kwargs.pop('colegio_id', None)
+        super().__init__(*args, **kwargs)
+        # Filtrar las personas que sean profesores
+        self.fields['ciclo'].queryset = Ciclos.objects.filter(colegio_id=colegio_id)
+
+
     class Meta:
         model = Nivel
         fields = ['nombre','ciclo','orden']
@@ -159,6 +174,14 @@ class CoordinadorcicloForm(ModelForm):
         fields = ['persona','ciclo']
 
 class ProfesorjefeForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        colegio_id = kwargs.pop('colegio_id', None)
+        super().__init__(*args, **kwargs)
+        # Filtrar las personas que sean profesores
+        self.fields['persona'].queryset = Personas.objects.filter(esprofe=True,colegio_id=colegio_id)
+        self.fields['nivel'].queryset = Nivel.objects.filter(ciclo__colegio_id=colegio_id)
+        self.fields['curso'].queryset = Curso.objects.filter(colegio_id=colegio_id)
+
     class Meta:
         model = ProfesorJefe
         fields = ['persona','nivel','curso']        

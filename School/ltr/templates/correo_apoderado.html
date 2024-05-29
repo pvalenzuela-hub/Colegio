@@ -54,9 +54,9 @@
 <body>
     <div class="row">
         <div class="content">
-            <!-- <div style="text-align: center;">
-                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg" alt="logo" class="logo">
-                </div> -->
+            <div style="text-align: center;">
+                <img src="{{ logoprincipal }}" alt="logo" class="logo">
+            </div>
             <div class="textos">
                 <p>Estimado(a) {{ ticket.nombre }} {{ ticket.apellido }}</p>
                 <p> {{ texto }} </p>
@@ -71,8 +71,7 @@
                 <strong>{{ persona.correo }}</strong>
             </div>
             <div style="text-align: left;">
-                <img class="" src="https://bridgecomms.cl/wp-content/uploads/2024/05/firma-La-Abadia.png"
-                    alt="logofirma" style="height:150px">
+                <img class="" src="{{ logofirma }}" alt="logofirma" style="height:150px">
 
             </div>
             <div>
@@ -84,26 +83,7 @@
 
                 <a href="http://127.0.0.1:8000/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
                     target="_blank" class="boton-texto">Responder al Colegio aquí</a>
-
-
             </div>
-
-            <table>
-                <tr>
-                    <td>
-
-                    </td>
-                </tr>
-                <tr><br><br>
-
-                    <!-- <td style="border-radius: 4px;" bgcolor="#004A99">
-                        <a href="http://bridgecomms.pythonanywhere.com/formulario_respuesta_apoderado/{{ ticket.id }}/{{ mensaje.id }}"
-                            target="_blank"
-                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 0px 0px; border-radius: 4px; display: inline-block; font-weight:bold;text-align: left;">Clic
-                            aquí para responder</a>
-                    </td> -->
-                </tr>
-            </table>
         </div>
     </div>
 

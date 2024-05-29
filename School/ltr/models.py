@@ -8,6 +8,8 @@ class Colegio(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     setting_name = models.CharField(max_length=10, default="")
+    logoprincipal = models.CharField(max_length=200, default="")
+    logofirma = models.CharField(max_length=200, default="")
   
 
     def __str__(self):
@@ -230,8 +232,8 @@ class Ticket(models.Model):
     asignatura = models.ForeignKey(Asignatura, on_delete=models.DO_NOTHING,default=1)
     fechaprimerenvio = models.DateTimeField(null=True,blank=True)
     fechaprimerarespuesta = models.DateTimeField(null=True,blank=True)
-    numticket = models.IntegerField(default=0)
-    personacierre = models.ForeignKey(Personas, on_delete=models.DO_NOTHING)
+    numticket = models.IntegerField(default=0,null=True)
+    personacierre = models.ForeignKey(Personas, on_delete=models.DO_NOTHING,null=True)
     motivocierre = models.ForeignKey(Motivocierre, on_delete=models.DO_NOTHING,null=True)
 
     def save(self, *args, **kwargs):
@@ -338,8 +340,8 @@ class Mensaje(models.Model):
 class AccesoColegio(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    colegiodefault = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='default_acceso_colegio')
-    colegioactual = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='actual_acceso_colegio')
+    colegiodefault = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='default_acceso_colegio', verbose_name="Colegio Default")
+    colegioactual = models.ForeignKey(Colegio, on_delete=models.DO_NOTHING, related_name='actual_acceso_colegio', verbose_name="Colegio Actual")
         
 
     def __str__(self):

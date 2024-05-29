@@ -77,8 +77,7 @@
         <div class="container">
             <div class="content">
                 <div style="text-align: center;">
-                    <img src="https://bridgecomms.cl/wp-content/uploads/2024/04/Logotipo-Horizontal-en-RGB.jpg"
-                        alt="logo" class="logo">
+                    <img src="{{ logoprincipal }}" alt="logo" class="logo">
                 </div>
                 <div class="encabezado">
                     <p>Estimado(a) {{ destinatario.nombre }}<br>{{ destinatario.cargo }}</p>
@@ -91,7 +90,7 @@
                 </div>
 
                 {% if ticketnuevo == 1 %}
-                <p class="textos" style="text-align: center;"><strong>N° Caso :</strong> {{ ticket.id }}<br>
+                <p class="textos" style="text-align: center;"><strong>N° Caso :</strong> {{ ticket.numticket }}<br>
                     <strong>Fecha ingreso :</strong> {{ ticket.fechacreacion|date:"d/m/Y" }}
                 </p>
                 <p class="textos"><strong>DATOS APODERADO</strong><br>
@@ -107,7 +106,7 @@
                 </p>
 
                 <p class="textos">Tipo contacto : {{ ticket.tipocontacto.nombre }}<br>
-                    Consulta dirigida al area de {{ ticket.subarea.area.nombre }} y razón {{ ticket.subarea.nombre }}<br>
+                    Consulta dirigida al area {{ ticket.subarea.area.nombre }} por {{ ticket.subarea.nombre }}<br>
                 </p>
 
                 <p class="textos"><strong>MENSAJE</strong><br>
@@ -130,8 +129,7 @@
                                         <!-- <a href="https://bridgecomms.pythonanywhere.com/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}" target="_blank" style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder al apoderado aquí</a> -->
                                         <a href="http://127.0.0.1:8000/formulario_respuesta_colegio/{{ ticket.id }}/{{ mensaje.id }}"
                                             target="_blank"
-                                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder
-                                            al apoderado aquí</a>
+                                            style="font-size: 16px; font-family: Helvetica, Arial, sans-serif; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 4px; display: inline-block; font-weight:bold;">Responder al apoderado aquí</a>
                                     </td>
                                 </tr>
                             </table>

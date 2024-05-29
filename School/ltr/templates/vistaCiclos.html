@@ -21,6 +21,13 @@
 									<li class="breadcrumb-item active" aria-current="page">{{ submenu }}</li>
 								</ol>
 							</div>
+							<div class="ms-auto pageheader-btn">
+								<a href="{% url 'crea-ciclo' %}" class="btn btn-primary btn-icon text-white me-2">
+									<span>
+										<i class="fe fe-plus"></i>
+									</span> Agregar Ciclo
+								</a>
+							</div>
 							<!-- <div class="ms-auto pageheader-btn">
 								<a href="#" class="btn btn-primary btn-icon text-white me-2">
 									<span>
@@ -40,6 +47,7 @@
 						<div class="row row-sm">
 							<div class="col-lg-12">
 								<div class="card">
+									<h1 class="page-title" align="center" style="color: #004A99">{{ colegio.nombre }}</h1>
 									<div class="card-header">
 										<h3 class="card-title">{{ titulo }}</h3>
 									</div>

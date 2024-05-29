@@ -1,42 +1,60 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 
 from dateutil.relativedelta import relativedelta
 from django.db.models import Sum, Count, Avg, ExpressionWrapper, F, Func, DurationField,IntegerField, FloatField
-
 from django.db.models.functions import ExtractYear, ExtractMonth, Extract
-from django.core.serializers import serialize
+from django.db import connection,transaction
 
-from django.contrib.auth.views import PasswordChangeView, PasswordResetDoneView, UserModel
 from .form import UserForm, PasswordChangingForm, CustomCreationForm, PersonasForm, CiclosForm, ColegiosForm, NivelesForm, CursosForm,AreasForm, SubareasForm, TiporespuestacolegioForm, ResponsablesubareanivelForm, CoordinadorcicloForm, ProfesorjefeForm, ResponsableasignaturaForm, ResponsablesuperiorForm, AccesoColegioForm
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy,reverse
 
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db import connection
-from django.db import transaction
-from django.urls import reverse
+
 #################################################################################################
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from django.shortcuts import render
-from django.http import HttpResponse, HttpResponseRedirect
+
 from django.template.loader import get_template
+
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.http import JsonResponse
+from django.core.serializers import serialize
+
+from django.http import HttpResponse, HttpResponseRedirect,JsonResponse
+
 from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe, TipoRespuestaColegio, Mensaje, Ciclos, Colegio, Motivocierre, AccesoColegio
 from django.views.generic import ListView, DetailView
-from django.core.serializers import serialize
-from datetime import date, timedelta, datetime
+from django.views.decorators.csrf import csrf_protect
+
 from django.contrib.auth.models import User
+from django.contrib.auth.views import PasswordChangeView, PasswordResetDoneView, UserModel, LogoutView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, user_passes_test
 
-
+from datetime import date, timedelta, datetime
 #################################################################################################
 # Create your views here.
 #########################
+class CustomLogoutView(LogoutView):
+    @method_decorator(csrf_protect)
+    def dispatch(self, request, *args, **kwargs):
+        # Agrega tu lógica personalizada aquí
+        current_user = request.user
+        if current_user.is_authenticated:  # Asegúrate de que el usuario está autenticado
+            accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+            if accesocolegio:
+                accesocolegio.colegioactual = accesocolegio.colegiodefault
+                accesocolegio.save()
+        response = super().dispatch(request, *args, **kwargs)
+        return response
+
+    def get_next_page(self):
+        return '/login'  # Especifica el nombre de la URL a la que deseas redirigir
+
+
 class PasswordsChangeView(PasswordChangeView):
     form_class = PasswordChangingForm
     #form_class = PasswordChangeForm
@@ -102,51 +120,58 @@ def obtener_destinatarios_ticket(ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
     subarea = get_object_or_404(Subarea, id=ticket.subarea.id)
-    asignatura = get_object_or_404(Asignatura, id=ticket.asignatura.id)
 
-    responsableprofesor = ProfesorResponsable.objects.filter(
-        asignatura=ticket.asignatura, nivel=ticket.nivel)
-    responsablessubareanivel = ResponsableSubareaNivel.objects.filter(
-        subarea=ticket.subarea, nivel=ticket.nivel)
+    # ASIGNATURA
+    # asignatura = get_object_or_404(Asignatura, id=ticket.asignatura.id)
+    # responsableprofesor = ProfesorResponsable.objects.filter(asignatura=ticket.asignatura, nivel=ticket.nivel)
+
+    profesorjefe = ProfesorJefe.objects.filter(nivel=ticket.nivel, curso=ticket.curso)
+    responsablessubareanivel = ResponsableSubareaNivel.objects.filter(subarea=ticket.subarea, nivel=ticket.nivel)
     coordinadorciclo = CoordinadorCiclo.objects.filter(ciclo=nivel.ciclo)
-    responsablesuperior = ResponsableSuperior.objects.filter(
-        subarea=ticket.subarea)
+    responsablesuperior = ResponsableSuperior.objects.filter(subarea=ticket.subarea)
 
     todos_responsables = list(responsablessubareanivel) + list(coordinadorciclo) + list(responsablesuperior)
     if subarea.profejefe:
-        profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
         todos_responsables += list(profesorjefe)
-    if asignatura.id > 1:
-        todos_responsables += list(responsableprofesor)
 
+    # if asignatura.id > 1:
+    #     todos_responsables += list(responsableprofesor)
+
+    # Lista de todos los destinatarios
     lista_destinatarios = obtener_destinatarios_unicos(todos_responsables)
 
+    ## Define Persona a quien va dirigido el Correo
     persona = None  # Asegurarse de que persona está definida
+    ## Primero busca si existe el responsable Subarea-Nivel
+    for responsable in responsablessubareanivel:
+        persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+        if persona_obj:
+            persona = persona_obj
+            break  # Salir del bucle si se encuentra una persona
 
-    if asignatura.id > 1:
-        # Primer Destinatario es el Profesor
-        for responsable in responsableprofesor:
-            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+    if persona == None:
+        for profjefe in profesorjefe:
+            persona_obj = get_object_or_404(Personas, id = profjefe.persona.id)
             if persona_obj:
                 persona = persona_obj
-                break  # Salir del bucle si se encuentra una persona
-
-    else:
-        # Si Destinatrario correo no ha sido asignado antes
-        for responsable in responsablessubareanivel:
-            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
-            if persona_obj:
-                persona = persona_obj
-                break  # Salir del bucle si se encuentra una persona
+                break
 
 
-    # Verificar si persona sigue siendo None y asignar por responsablesubareanivel
-    if persona is None:
-        for responsable in responsablessubareanivel:
-            persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
-            if persona_obj:
-                persona = persona_obj
-                break  # Salir del bucle si se encuentra una persona
+    # if asignatura.id > 1:
+    #     # Primer Destinatario es el Profesor
+    #     for responsable in responsableprofesor:
+    #         persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+    #         if persona_obj:
+    #             persona = persona_obj
+    #             break  # Salir del bucle si se encuentra una persona
+
+    # else:
+    #     # Si Destinatrario correo no ha sido asignado antes
+    #     for responsable in responsablessubareanivel:
+    #         persona_obj = get_object_or_404(Personas, id=responsable.persona.id)
+    #         if persona_obj:
+    #             persona = persona_obj
+    #             break  # Salir del bucle si se encuentra una persona
 
     return (lista_destinatarios, persona)
 
@@ -162,6 +187,9 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
         email_config = settings.EMAIL_BACKENDS.get(from_email)
         print ('email_config -->', email_config)
         print ('destino -->', destino)
+        colegio = Colegio.objects.get(id=ticket.id)
+        logoprincipal = colegio.logoprincipal
+        logofirma = colegio.logofirma
 
         if not email_config:
             raise ValueError(f"No se encontró la configuración de correo para '{from_email}'")
@@ -175,6 +203,7 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
                 'mensaje': mensaje,
                 'message': message,
                 'ticketnuevo': ticketnuevo, # 0 o 1
+                'logoprincipal': logoprincipal,
             })
 
         if destino == 2:
@@ -185,6 +214,8 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
                 'mensaje': mensaje,
                 'persona': persona_firma,
                 'texto': message,
+                'logoprincipal': logoprincipal,
+                'logofirma': logofirma,
             })
     
         connection = get_connection(
@@ -214,40 +245,7 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
         print (e)
         return False
 
-
-@transaction.atomic
-def envio_correo_colegio(request,to_adr,ticket,mensaje,destinatario_correo,asunto,message,ticketnuevo):
-    ############################
-    # FUE REEMPLAZADO POR enviar_correo()
-    # Envia Correo al Colegio  #
-    ############################
-    try:
-
-        template = get_template('correo_colegio.html')
-        content = template.render({
-            'destinatario': destinatario_correo,
-            'ticket': ticket,
-            'mensaje': mensaje,
-            'message': message,
-            'ticketnuevo': ticketnuevo,
-        })
-
-        mail = EmailMultiAlternatives(
-            subject=asunto,
-            body='',
-            from_email=settings.EMAIL_HOST_USER,
-            to=to_adr
-        )
-        mail.attach_alternative(content, 'text/html')
-        mail.send()
-
-        return True
-
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
-
+@login_required
 @transaction.atomic
 def envia_primer_correo_colegio(request):
     ###########################################################
@@ -255,7 +253,7 @@ def envia_primer_correo_colegio(request):
     # Prepara los datos para llamar a la función envio_correo #
     ###########################################################
 
-    # Prepara los datos para llamar al envio_correo_colegio
+    # Prepara los datos para llamar al enviar_correo
 
     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
     colegio = ticket.subarea.area.colegio
@@ -268,16 +266,18 @@ def envia_primer_correo_colegio(request):
     area = ticket.subarea.area.nombre
 
     personas_destinatarias, principal = obtener_destinatarios_ticket(ticket.id)
-
    
     if principal == None:
-        contexto = {
-            'msg': "No es posible enviar correo, falta definir Destinatario Principal!",
-            'ticketid': ticket.id
-        }
-        
-        return render(request, 'error_correo.html', contexto)
+        # Crea Seguimiento
+        Seguimiento.objects.create(
+            ticket=ticket,
+            comentario='No fue posible enviar correo, falta definir Destinatario Principal.',
+            user=user,
+            fechahora=fec
+        )
 
+        return redirect(f'/{ticket.id}')
+        
     to_adr = [persona.correo for persona in personas_destinatarias]
 
     asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
@@ -288,7 +288,7 @@ def envia_primer_correo_colegio(request):
 
     message = f"De: {emisor}\n Para: {principal.correo}\n Asunto: {asunto}\n Mensaje: {ticket.motivo}"
     try:
-        # Crea Mensaje
+        # Crear Mensaje
         nuevo_mensaje = Mensaje.objects.create(
             ticket=ticket,
             correoemisor=emisor,
@@ -298,6 +298,26 @@ def envia_primer_correo_colegio(request):
             message=message,
             persona=principal
         )
+
+        print ('nuevo_mensaje -->', nuevo_mensaje)
+
+        # Envia Primer Correo al colegio
+        envio = enviar_correo(
+            asunto,
+            message,
+            to_adr,
+            ticket,
+            nuevo_mensaje,
+            1,
+            principal,
+            [],
+            colegio.setting_name,
+            1
+        )
+
+        if not envio:
+            return redirect(f'/{ticket.id}')
+
         # Actualiza Ticket
         nuevo_estado = get_object_or_404(Estadoticket, id=2)
         fec = datetime.today()
@@ -313,64 +333,13 @@ def envia_primer_correo_colegio(request):
             user=user,
             fechahora=fec
         )
-
-        #print ('enviar_correo(...)')
-#enviar_correo(
-# subject,
-# message,
-# to_adr,
-# ticket,
-# mensaje,
-# ticketnuevo,
-# destinatario_correo,
-# persona_firma,
-# from_email,
-# destino):
         print ('colegio.setting_name -->', colegio.setting_name)
-
-        envio = enviar_correo(
-            asunto,
-            message,
-            to_adr,
-            ticket,
-            nuevo_mensaje,
-            1,
-            principal,
-            [],
-            colegio.setting_name,
-            1
-        )
-        # envio = envio_correo_colegio(
-        #     request,
-        #     to_adr,
-        #     ticket,
-        #     nuevo_mensaje,
-        #     principal,
-        #     asunto,
-        #     message,
-        #     1
-        # )
-        if not envio:
-            contexto = {
-            'texto': 'Ha ocurrido un error en el envío del Mensaje, revise la casilla de bienestar@abadia.cl'
-            }
-            return render(request, 'correo_enviado.html', contexto)
 
 
     except Exception as e:
-        print(f"Error: {e}")
-        return False
+        return redirect(f'/{ticket.id}')
 
     return redirect(f'/{ticket.id}')
-
-@login_required
-def pruebacorreo(request):
-    # botón desde Descripción para envío de correo
-    ticket = Ticket.objects.get(id=request.POST.get('idticket'))
-    print(ticket)
-   # envio_correo_colegio(ticket.id)
-    return render(request, 'exito.html')
-
 
 def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
     ##############################################################################
@@ -382,6 +351,10 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
 
     ticket = get_object_or_404(Ticket, id=ticket_id)
     mensaje = get_object_or_404(Mensaje,id = mensaje_id)
+    colegio = get_object_or_404(Colegio, id = ticket.subarea.area.colegio.id)
+    logoprincipal = colegio.logoprincipal
+    logofirma = colegio.logofirma
+    print (logoprincipal)
 
     try:
         mensaje_respondido = Mensaje.objects.get(mensajerespondidoid=mensaje.id)
@@ -393,6 +366,8 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
         # mensaje ya fue respondido
         contexto = {
             'mensaje': mensaje_respondido,
+            'logoprincipal': logoprincipal,
+            'logofirma':logofirma,
         }
 
         return render(request, 'correo_respondido.html', contexto)
@@ -411,45 +386,12 @@ def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
         'mensaje': mensaje,
         'destinatarios': destinatarios,
         'tiporespuestas': tiporespuesta,
+        'logoprincipal': logoprincipal,
+        'logofirma':logofirma,
 
     }
     return render(request, template_name, context=contexto)
 
-
-@transaction.atomic
-def envio_correo_apoderado(request,to_adr, subject, message, persona_firma, ticket, mensaje):
-    #############################
-    # FUE REEMPLADO POR función única: enviar_correo()
-    # Envío Correo al Apoderado #
-    #############################
-    try:
-        # ticket = get_object_or_404(Ticket, id=ticket_id)
-        # mensaje = get_object_or_404(Mensaje, id=mensaje_id)
-        #persona = get_object_or_404(Personas, id=firma_id)
-
-        template = get_template('correo_apoderado.html')
-        content = template.render({
-            'ticket': ticket,
-            'mensaje': mensaje,
-            'persona': persona_firma,
-            'texto': message,
-        })
-
-        mail = EmailMultiAlternatives(
-            subject=subject,
-            body='',
-            from_email=settings.EMAIL_HOST_USER,
-            to=to_adr
-        )
-        mail.attach_alternative(content, 'text/html')
-        mail.send()
-
-        return True
-
-
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
 
 def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
     ###############################################################################
@@ -460,10 +402,13 @@ def formulariorespuesta_apoderado(request, ticket_id, mensaje_id):
 
     ticket = get_object_or_404(Ticket, id=ticket_id)
     mensaje = get_object_or_404(Mensaje,id = mensaje_id)
+    colegio = get_object_or_404(Colegio, id = ticket.subarea.area.colegio.id)
+    logoprincipal = colegio.logoprincipal
 
     contexto = {
         'ticket': ticket,
         'mensaje': mensaje,
+        'logoprincipal': logoprincipal
 
     }
     return render(request, template_name, context=contexto)
@@ -486,6 +431,7 @@ def respuesta_colegio(request):
             # Lee datos del ticket
             ticket = get_object_or_404(Ticket,id = idticket)
             colegio = ticket.subarea.area.colegio
+            logoprincipal = colegio.logoprincipal
             email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
 
             # Actualiza estado del mensaje anterior como Respondido
@@ -575,25 +521,29 @@ def respuesta_colegio(request):
 
             if envio:
                 contexto = {
-                    'texto': 'Se enviará una copia a su correo.'
+                    'texto': 'Se enviará una copia a su correo.',
+                    'logoprincipal': logoprincipal
                     }
                 return render(request,'correo_enviado.html',contexto)
             else:
                 contexto = {
-                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente'
+                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente',
+                    'logoprincipal': logoprincipal
                 }
                 return render(request,'correo_enviado.html',contexto)
 
         except Exception as e:
             #print(f"Error: {e}")
             contexto = {
-                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.',
+                'logoprincipal': logoprincipal
                 }
             return render(request,'correo_enviado.html',contexto)
     else:
         # Redireccionar o mostrar un error si se accede al método incorrecto
         contexto = {
-            'texto': 'No es posible ingresar a este formulario. Contacte al administrador'
+            'texto': 'No es posible ingresar a este formulario. Contacte al administrador',
+            'logoprincipal': logoprincipal
                 }
         return render(request,'correo_enviado.html',contexto)
 
@@ -616,6 +566,7 @@ def respuesta_apoderado(request):
             # Lee datos del ticket
             ticket = get_object_or_404(Ticket,id = idticket)
             colegio = ticket.subarea.area.colegio
+            logoprincipal = colegio.logoprincipal
             email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
 
             # Actualiza estado del mensaje anterior como Respondido
@@ -665,28 +616,18 @@ def respuesta_apoderado(request):
                     colegio.setting_name,
                     1
             )
-
-
-            # envio = envio_correo_colegio(
-            #     request,
-            #     destinatarios_str,
-            #     ticket,
-            #     nuevo_mensaje,
-            #     mensaje.persona,
-            #     mensaje.asunto,
-            #     respuesta,
-            #     0
-
-            # )
+         
 
             if envio:
                 contexto = {
-                    'texto': 'Le responderemos a la brevedad'
+                    'texto': 'Le responderemos a la brevedad',
+                    'logoprincipal': logoprincipal
                     }
                 return render(request,'correo_enviado.html',contexto)
             else:
                 contexto = {
-                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente'
+                    'texto': 'Ha ocurrido un error en el envío del Correo, verifique la casilla, sino intente nuevamente',
+                    'logoprincipal': logoprincipal
                 }
                 return render(request,'correo_enviado.html',contexto)
 
@@ -695,23 +636,25 @@ def respuesta_apoderado(request):
         except Exception as e:
             print(f"Error: {e}")
             contexto = {
-                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.'
+                'texto': 'Ha ocurrido un error con el envío del Mensaje, por favor vuelva a intentarlo.',
+                'logoprincipal': logoprincipal
                 }
             return render(request,'correo_enviado.html',contexto)
     else:
         # Redireccionar o mostrar un error si se accede al método incorrecto
         contexto = {
-            'texto': 'No es posible ingresar a este formulario,contacte al Administrador.'
+            'texto': 'No es posible ingresar a este formulario,contacte al Administrador.',
+            'logoprincipal': logoprincipal
                 }
         return render(request,'correo_enviado.html',contexto)
 
-def enviacorreoalapoderado(request):
-    # Envío correo de respuesta al Apoderado
-    ticket = Ticket.objects.get(id=request.POST.get('idticket'))
+# def enviacorreoalapoderado(request):
+#     # Envío correo de respuesta al Apoderado
+#     ticket = Ticket.objects.get(id=request.POST.get('idticket'))
 
-    print(ticket)
-    envio_correo_apoderado(ticket.id)
-    return redirect(f'/{ticket.id}')
+#     print(ticket)
+#     envio_correo_apoderado(ticket.id)
+#     return redirect(f'/{ticket.id}')
 
 class VisorHistorialcaso(DetailView):
 
@@ -721,6 +664,8 @@ class VisorHistorialcaso(DetailView):
 
         pk = self.kwargs.get('pk')
         ticket = Ticket.objects.get(id=pk)
+        colegio = Colegio.objects.get(id=ticket.subarea.area.colegio.id)
+        logoprincipal = colegio.logoprincipal
         tespera = date.today() - ticket.fechacreacion.date()
         diastotalespera = tespera.days
         tcambioestado = date.today() - ticket.fechahoracambioestado.date()
@@ -760,13 +705,13 @@ class VisorHistorialcaso(DetailView):
             'diascambioestado': dias_de_cambio_estado,
             'segs': Mensaje.objects.filter(ticket=pk),
             'estados': Estadoticket.objects.all(),
-            # 'trx': self.model2.objects.filter(pk=pk),
             'encabezado': 'Visor de Caso',
             'responsablearea': personaresponsable,
             'responsableciclo': personaciclo,
             'responsablesuperrior': personasuperior,
             'responsableasignatura': responsable_asignatura,
-            'profesorjefe': profesorjefe
+            'profesorjefe': profesorjefe,
+            'logoprincipal': logoprincipal,
         }
         return render(request, self.template_name, contexto)
 
@@ -852,21 +797,17 @@ def cierrapantalla(request):
     return render(request,'cierra_pantalla.html', contexto)
 
 
-
 def registroticket(request):
     # Registro Ticket Colegio Abadía Id=1
     # Vista Personalizada para Colegio Id = 1
     ' Colegio 1'
     colegio_id = 1  # ID del Colegio 1
-    niveles = Nivel.objects.filter(
-        ciclo__colegio_id=colegio_id).order_by('orden')
+    niveles = Nivel.objects.filter(ciclo__colegio_id=colegio_id).order_by('orden')
     cursos = Curso.objects.filter(colegio_id=colegio_id).order_by('orden')
     tipocontactos = Tipocontacto.objects.filter(colegio_id=colegio_id)
     # areas = Area.objects.filter(colegio_id = colegio_id)
-    subareas = Subarea.objects.filter(
-        area__colegio_id=colegio_id).order_by('area')
-    asignatura = Asignatura.objects.filter(
-        colegio_id=colegio_id).order_by('orden')
+    subareas = Subarea.objects.filter(area__colegio_id=colegio_id).order_by('area')
+    # asignatura = Asignatura.objects.filter(colegio_id=colegio_id).order_by('orden')
 
     template_name = "formulario_ticket.html"
     contexto = {
@@ -874,7 +815,7 @@ def registroticket(request):
         'cursos': cursos,
         'tipocontactos': tipocontactos,
         'subareas': subareas,
-        'asignaturas': asignatura,
+        # 'asignaturas': asignatura,
 
     }
     return render(request, template_name, contexto)
@@ -883,16 +824,16 @@ def registrocasos(request):
     # Registro Ticket Colegio 2
     # Vista Personalizada para Colegio Id = 2
     ' Colegio 2'
-    colegio_id = 2  # ID del Colegio 1
-    niveles = Nivel.objects.filter(
-        ciclo__colegio_id=colegio_id).order_by('orden')
+    colegio_id = 2
+    colegio = get_object_or_404(Colegio, id = colegio_id)
+    niveles = Nivel.objects.filter(ciclo__colegio_id=colegio_id).order_by('orden')
     cursos = Curso.objects.filter(colegio_id=colegio_id).order_by('orden')
     tipocontactos = Tipocontacto.objects.filter(colegio_id=colegio_id)
+    logoprincipal = colegio.logoprincipal
+
     # areas = Area.objects.filter(colegio_id = colegio_id)
-    subareas = Subarea.objects.filter(
-        area__colegio_id=colegio_id).order_by('area')
-    asignatura = Asignatura.objects.filter(
-        colegio_id=colegio_id).order_by('orden')
+    subareas = Subarea.objects.filter(area__colegio_id=colegio_id).order_by('area')
+    asignatura = Asignatura.objects.filter(colegio_id=colegio_id).order_by('orden')
 
     template_name = "formulario_ticket2.html"
     contexto = {
@@ -901,10 +842,11 @@ def registrocasos(request):
         'tipocontactos': tipocontactos,
         'subareas': subareas,
         'asignaturas': asignatura,
+        'colegio': colegio,
+        'logoprincipal': logoprincipal
 
     }
     return render(request, template_name, contexto)
-
 
 
 def cargar_subareas(request):
@@ -917,8 +859,9 @@ def cargar_subareas(request):
 
 
 def creaticket(request):
+    colegio = []
+    logo = ""
     if request.method == 'POST':
-
         estadoticket = get_object_or_404(Estadoticket, id=1)
         nombre = request.POST['nombre']
         apellidos = request.POST['apellidos']
@@ -931,10 +874,10 @@ def creaticket(request):
         tipocontacto = request.POST['tipocontacto']
         subarea = request.POST['subarea']
         motivo = request.POST['motivo']
-        asignaturaid = request.POST['asignatura']
+        #asignaturaid = request.POST['asignatura']
         fechahoracambioestado = datetime.now()
 
-        Ticket.objects.create(
+        nuevoticket = Ticket.objects.create(
             nombre=nombre,
             apellido=apellidos,
             correo=email,
@@ -947,17 +890,134 @@ def creaticket(request):
             nombrealumno=nombrealumno,
             apellidoalumno=apellidosalumno,
             nivel_id=nivel,
-            curso_id=curso,
-            asignatura_id=asignaturaid)
+            curso_id=curso)
+            #asignatura_id=asignaturaid)
 
-        subarea = get_object_or_404(Subarea, id = subarea)
-        colegio = subarea.area.colegio
-        contexto = {
-            'texto': 'Le responderemos a la brevedad',
-            'colegio': colegio
+        ## Enviar Correo ##
+        # Prepara los datos para llamar al enviar_correo
+        ticket = nuevoticket
+        colegio = get_object_or_404(Colegio, id = ticket.subarea.area.colegio.id)
+        
+        email_config = settings.EMAIL_BACKENDS.get(colegio.setting_name)
+        logoprincipal = colegio.logoprincipal
 
+
+        user = get_object_or_404(User, username='bridge')
+        area = ticket.subarea.area.nombre
+
+        personas_destinatarias, principal = obtener_destinatarios_ticket(ticket.id)
+
+        if principal == None:
+            # Crea Seguimiento
+            Seguimiento.objects.create(
+                ticket=ticket,
+                comentario='No fue posible enviar correo, falta definir Destinatario Principal.',
+                user=user,
+                fechahora=fechahoracambioestado
+            )
+            contexto = {
+                'texto': 'Le responderemos a la brevedad',
+                'colegio': colegio,
+                'logoprincipal': logoprincipal
             }
-         
+            return render(request,'correo_enviado.html',contexto)
+
+        to_adr = [persona.correo for persona in personas_destinatarias]
+        asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
+
+        #emisor = 'bienestar@colegiolaabadia.cl'
+        emisor = email_config['EMAIL_HOST_USER']
+        #print ('envia_primer_correo_colegio: emisor -->', emisor)
+
+        message = f"De: {emisor}\n Para: {principal.correo}\n Asunto: {asunto}\n Mensaje: {ticket.motivo}"
+        try:
+            # Crea Mensaje
+            nuevo_mensaje = Mensaje.objects.create(
+                ticket=ticket,
+                correoemisor=emisor,
+                correodestino=principal.correo,
+                respondido=0,
+                asunto=asunto,
+                message=message,
+                persona=principal
+            )
+            # Envia Primer Correo al colegio
+            envio = enviar_correo(
+                asunto,
+                message,
+                to_adr,
+                ticket,
+                nuevo_mensaje,
+                1,
+                principal,
+                [],
+                colegio.setting_name,
+                1
+            )
+
+            if not envio:
+                Seguimiento.objects.create(
+                    ticket=ticket,
+                    comentario='Ha ocurrido un error en el envío del Correo, función enviar_correo.',
+                    user=user,
+                    fechahora=fechahoracambioestado
+                )
+                contexto = {
+                    'texto': 'Le responderemos a la brevedad',
+                    'colegio': colegio,
+                    'logoprincipal': logoprincipal
+                }
+                return render(request,'correo_enviado.html',contexto)
+
+            # Crea Mensaje
+            nuevo_mensaje = Mensaje.objects.create(
+                ticket=ticket,
+                correoemisor=emisor,
+                correodestino=principal.correo,
+                respondido=0,
+                asunto=asunto,
+                message=message,
+                persona=principal
+            )
+            # Actualiza Ticket
+            nuevo_estado = get_object_or_404(Estadoticket, id=2)
+          
+            ticket.fechaprimerenvio = fechahoracambioestado
+            ticket.estadoticket = nuevo_estado
+            ticket.fechahoracambioestado = fechahoracambioestado
+            ticket.save()
+
+            # Crea Seguimiento
+            Seguimiento.objects.create(
+                ticket=ticket,
+                comentario=f'Primer envío al Colegio. Se deriva caso al área {area}',
+                user=user,
+                fechahora=fechahoracambioestado
+            )
+          
+
+        except Exception as e:
+            Seguimiento.objects.create(
+                ticket=ticket,
+                comentario=f'Has ocurrido un error de excepción en el primer envío al Colegio. Error:{e}',
+                user=user,
+                fechahora=fechahoracambioestado
+            )
+            contexto = {
+                'texto': 'Le responderemos a la brevedad',
+                'colegio': colegio,
+                'logoprincipal': logoprincipal
+            }
+            return render(request,'correo_enviado.html',contexto)
+
+            ###################
+    
+    contexto = {
+        'texto': 'Le responderemos a la brevedad',
+        'colegio': colegio,
+        'logoprincipal': logoprincipal
+    }
+
     return render(request,'correo_enviado.html',contexto)
     
 
@@ -972,6 +1032,7 @@ class Index(LoginRequiredMixin,DetailView):
         current_user = request.user
         accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
         colegioactual = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        colegio = get_object_or_404(Colegio, id = colegioactual)
         print (colegioactual)
 
         nuevos = Ticket.objects.filter(
@@ -995,7 +1056,8 @@ class Index(LoginRequiredMixin,DetailView):
             'colegio1': colegio1,
             'conversacioncolegio': conversacioncolegio,
             'conversacionapoderado': conversacionapoderado,
-            'cerrado': cerrado
+            'cerrado': cerrado,
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -1008,6 +1070,8 @@ class Listadocasos(LoginRequiredMixin,DetailView):
         print ('current_user -->', current_user)
         accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
         colegioactual = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        colegio = get_object_or_404(Colegio, id = colegioactual)
+        logoprincipal = colegio.logoprincipal
 
         colegio_id = colegioactual  # ID del Colegio Actual
         
@@ -1029,7 +1093,9 @@ class Listadocasos(LoginRequiredMixin,DetailView):
             'primeraresp': primeraresp,
             'convercolegio': convercolegio,
             'converapoderado': converapoderado,
-            'cerrado': cerrado
+            'cerrado': cerrado,
+            'colegio': colegio,
+            'logoprincipal': logoprincipal
         }
         return render(request, self.template_name, contexto)
 
@@ -1049,6 +1115,8 @@ class VisorTicket(LoginRequiredMixin,DetailView):
         tcambioestado = date.today() - ticket.fechahoracambioestado.date()
         dias_de_cambio_estado = str(tcambioestado.days)  # Días de diferencia
         nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
+        colegio = Colegio.objects.get(id=ticket.subarea.area.colegio.id)
+        logoprincipal = colegio.logoprincipal
 
 
 ##########
@@ -1082,16 +1150,16 @@ class VisorTicket(LoginRequiredMixin,DetailView):
             'ticket': ticket,
             'diastotalespera': diastotalespera,
             'diascambioestado': dias_de_cambio_estado,
-            'segs': Mensaje.objects.filter(ticket=pk),
+            'segs': Seguimiento.objects.filter(ticket=pk),
             'estados': Estadoticket.objects.all(),
-            # 'trx': self.model2.objects.filter(pk=pk),
             'encabezado': 'Visor de Caso',
             'responsablearea': personaresponsable,
             'responsableciclo': personaciclo,
             'responsablesuperrior': personasuperior,
             'responsableasignatura': responsable_asignatura,
             'profesorjefe': profesorjefe,
-            'user_id':user_id
+            'user_id':user_id,
+            'logoprincipal': logoprincipal
         }
         return render(request, self.template_name, contexto)
 
@@ -1151,6 +1219,7 @@ def zanex(request):
 
 @login_required
 def Logout(_request):
+    print ('logout')
     return render(_request,'registration/login.html')
 
 def es_admin(user):
@@ -1226,12 +1295,16 @@ def chart_casosarea(request):
     # Reclamos por AREA #
     #####################
     ## Falta filtrar por Colegio
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     end_date = date.today()
     end_of_day = end_date + timedelta(days=1)
 
-    results = Ticket.objects.filter(
+    results = Ticket.objects.filter(subarea__area__colegio_id=colegio_id,
         fechacreacion__gte=start_date,
         fechacreacion__lte=end_of_day
         ).values('subarea__area__nombre').annotate(
@@ -1260,20 +1333,28 @@ def chart_casosarea(request):
             },
             'series': [
                 {
-
                     'type': 'pie',
                     'radius': '80%',
-                    'data': [{'value': value, 'name': name} for value, name in zip(values, names)]
+                    'data': [{'value': value, 'name': name} for value, name in zip(values, names)],
+
+                    'label': {
+                        'show': False
+                    },
                 }
             ]
+           
         }
+        
         return JsonResponse(chart_data)
 
 
-def chart_tpromedioprimrespuesta(_request):
+def chart_tpromedioprimrespuesta(request):
     #####################################
     # Tiempo promedio primera respuesta #
     #####################################
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
 
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
@@ -1281,7 +1362,7 @@ def chart_tpromedioprimrespuesta(_request):
     end_of_day = end_date + timedelta(days=1)
 
     # recoger los promedios de los tiempos de respuesta para los casos que hayan tenido primerarespuesta
-    results = Ticket.objects.filter(
+    results = Ticket.objects.filter(subarea__area__colegio_id = colegio_id,
         fechacreacion__gte=start_date,
         fechacreacion__lte=end_of_day,
         fechaprimerarespuesta__isnull=False
@@ -1331,10 +1412,13 @@ def chart_tpromedioprimrespuesta(_request):
 
     return JsonResponse(chart_data)
 
-def chart_casostipocontacto(_request):
+def chart_casostipocontacto(request):
     #####################################
     # Casos por AñoMes y Tipo Contacto  #
     #####################################
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
 
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
@@ -1346,7 +1430,7 @@ def chart_casostipocontacto(_request):
     end_of_day = end_date + timedelta(days=1)
 
 
-    results = Ticket.objects.filter(
+    results = Ticket.objects.filter(subarea__area__colegio_id = colegio_id,
         fechacreacion__gte = start_date,
         fechacreacion__lte = end_of_day
     ).annotate(
@@ -1412,6 +1496,7 @@ def chart_casostipocontacto(_request):
 class Vista_Personas(LoginRequiredMixin, ListView):
     template_name = 'vistaPersonas.html'
     model = Personas
+    
 
     def get_queryset(self, request):
         current_user = request.user
@@ -1422,13 +1507,20 @@ class Vista_Personas(LoginRequiredMixin, ListView):
         
 
     def get(self, request, *args, **kwargs):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
-            'personas': self.get_queryset(),
+            'personas': self.get_queryset(request),
             'encabezado': 'Listado de Docentes',
             'menu': 'Tabla Docentes',
             'submenu': 'Tablas / Docentes',
-            'titulo': 'Docentes'
+            'titulo': 'Docentes',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -1483,13 +1575,20 @@ class Vista_Ciclos(LoginRequiredMixin, ListView):
         return self.model.objects.filter(colegio__id=colegio_id).order_by('nombre')
 
     def get(self, request, *args, **kwargs):
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
-            'ciclos': self.get_queryset(),
+            'ciclos': self.get_queryset(request),
             'encabezado': 'Listado de Ciclos Colegio',
             'menu': 'Tablas Ciclos',
             'submenu': 'Tablas fijas / Ciclos',
-            'titulo': 'Ciclos'
+            'titulo': 'Ciclos',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -1516,6 +1615,37 @@ def editarciclo(request,pk):
 
     return render(request,template_name, data)
 
+@login_required
+def creaciclo(request):
+    template_name = 'editar_ciclo.html'
+    data = {
+        'form': CiclosForm()
+    }
+
+    if request.method == 'POST':
+        formulario = CiclosForm(data=request.POST)
+        if formulario.is_valid():
+            formulario.save()
+            return redirect(to="listaciclos")
+        data["form"] = formulario
+
+    return render(request,template_name, data)
+
+@login_required
+def eliminarciclo(request,pk):
+    msg = ""
+    ciclo = get_object_or_404(Ciclos,id=pk)
+    template_name = 'vistaCiclos.html'
+
+    try:
+     
+        ciclo.delete()
+        return redirect(to="listaciclos")
+
+    except Exception as e:
+        msg = 'ERROR: No es posible eliminar, revise el resto de la información!!'
+        return render(request, template_name, {'msg': msg})
+
 class Vista_Colegios(LoginRequiredMixin, ListView):
     template_name = 'vistaColegios.html'
     model = Colegio
@@ -1525,6 +1655,7 @@ class Vista_Colegios(LoginRequiredMixin, ListView):
         return self.model.objects.order_by('nombre')
 
     def get(self, request, *args, **kwargs):
+        
 
         contexto = {
             'colegios': self.get_queryset(),
@@ -1575,14 +1706,21 @@ class Vista_Niveles(LoginRequiredMixin, ListView):
         return self.model.objects.filter(ciclo__colegio__id = colegio_id).order_by('orden')
 
     def get(self, request, *args, **kwargs):
-        niveles = self.get_queryset()
+        niveles = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'niveles': niveles,
             'encabezado': 'Listado de Niveles',
             'menu': 'Tablas Niveles',
             'submenu': 'Tablas fijas / Niveles',
-            'titulo': 'Niveles'
+            'titulo': 'Niveles',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -1590,19 +1728,23 @@ class Vista_Niveles(LoginRequiredMixin, ListView):
 def editarnivel(request,pk):
     nivel = Nivel.objects.get(id=pk)
     template_name = 'editar_nivel.html'
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
     data = {
-        'form': NivelesForm(instance=nivel)
+        'form': NivelesForm(instance=nivel,colegio_id=colegio_id)
     }
 
     if request.method == 'POST':
-        formulario = NivelesForm(data=request.POST, instance=nivel)
+        formulario = NivelesForm(data=request.POST, instance=nivel,colegio_id=colegio_id)
 
         if formulario.is_valid():
             formulario.save()
             return redirect('listaniveles')
         else:
             data = {
-                'form': NivelesForm(instance=nivel),
+                'form': NivelesForm(instance=nivel, colegio_id=colegio_id),
                 'msg': 'Ha ocurrido un eror en el formulario revise los datos'
             }
             return render(request,template_name,context=data)
@@ -1652,14 +1794,21 @@ class Vista_Cursos(LoginRequiredMixin, ListView):
         return self.model.objects.filter(colegio__id = colegio_id).order_by('orden')
 
     def get(self, request, *args, **kwargs):
-        cursos = self.get_queryset()
+        cursos = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'cursos': cursos,
             'encabezado': 'Listado de Cursos',
             'menu': 'Tablas Cursos',
             'submenu': 'Tablas fijas / Cursos',
-            'titulo': 'Cursos'
+            'titulo': 'Cursos',
+            'colegio': colegio
         }
         return render(request, self.template_name, contexto)
 
@@ -1728,14 +1877,21 @@ class Vista_Areas(LoginRequiredMixin, ListView):
 
     def get(self, request, *args, **kwargs):
         
-        areas = self.get_queryset()
+        areas = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'areas': areas,
             'encabezado': 'Listado de Areas',
             'menu': 'Tablas Areas',
             'submenu': 'Tablas fijas / Areas',
-            'titulo': 'Areas'
+            'titulo': 'Areas',
+            'colegio': colegio
         }
         return render(request, self.template_name, contexto)
 
@@ -1804,14 +1960,21 @@ class Vista_Subareas(LoginRequiredMixin, ListView):
         return self.model.objects.filter(area__colegio__id = colegio_id).order_by('area')
 
     def get(self, request, *args, **kwargs):
-        subareas = self.get_queryset()
+        subareas = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'subareas': subareas,
             'encabezado': 'Listado de Subareas',
             'menu': 'Tablas Subareas',
             'submenu': 'Tablas fijas / Subareas',
-            'titulo': 'Subareas'
+            'titulo': 'Subareas',
+            'colegio': colegio
         }
         return render(request, self.template_name, contexto)
 
@@ -1953,34 +2116,46 @@ class Vista_Responsablesubareanivel(LoginRequiredMixin, ListView):
         return self.model.objects.filter(subarea__area__colegio__id=colegio_id).order_by('subarea', 'nivel')
 
     def get(self, request, *args, **kwargs):
-        responsablesubareanivel = self.get_queryset()
+        responsablesubareanivel = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'responsablesubareanivel': responsablesubareanivel,
             'encabezado': 'Listado Responsables SubArea y Nivel',
             'menu': 'Tablas Responsables SubArea y Nivel',
             'submenu': 'Tablas fijas / Responsables SubArea y Nivel',
-            'titulo': 'Responsables SubArea y Nivel'
+            'titulo': 'Responsables SubArea y Nivel',
+            'colegio': colegio,
+        
         }
         return render(request, self.template_name, contexto)
 
 @login_required
 def editarresponsablesubareanivel(request,pk):
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual     
+
     responsablesubareanivel = ResponsableSubareaNivel.objects.get(id=pk)
     template_name = 'editar_responsablesubareanivel.html'
     data = {
-        'form': ResponsablesubareanivelForm(instance=responsablesubareanivel)
+        'form': ResponsablesubareanivelForm(instance=responsablesubareanivel, colegio_id=colegio_id)
     }
 
     if request.method == 'POST':
-        formulario = ResponsablesubareanivelForm(data=request.POST, instance=responsablesubareanivel)
+        formulario = ResponsablesubareanivelForm(data=request.POST, instance=responsablesubareanivel,colegio_id=colegio_id)
 
         if formulario.is_valid():
             formulario.save()
             return redirect('listaresponsablesubareaniveles')
         else:
             data = {
-                'form': ResponsablesubareanivelForm(instance=responsablesubareanivel),
+                'form': ResponsablesubareanivelForm(instance=responsablesubareanivel, colegio_id=colegio_id),
                 'msg': 'Ha ocurrido un eror en el formulario revise los datos'
             }
             return render(request,template_name,context=data)
@@ -2032,14 +2207,21 @@ class Vista_Coordinadorciclo(LoginRequiredMixin, ListView):
         return self.model.objects.filter(ciclo__colegio__id = colegio_id).order_by('persona')
 
     def get(self, request, *args, **kwargs):
-        coordinadorciclo = self.get_queryset()
+        coordinadorciclo = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'coordinadorciclos': coordinadorciclo,
             'encabezado': 'Listado Coordinador Ciclo',
             'menu': 'Tablas Coordinador Ciclo',
             'submenu': 'Tablas fijas / Coordinador Ciclo',
-            'titulo': 'Coordinador Ciclo'
+            'titulo': 'Coordinador Ciclo',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -2108,34 +2290,45 @@ class Vista_Profesorjefe(LoginRequiredMixin, ListView):
         return self.model.objects.filter(curso__colegio__id = colegio_id).order_by('persona')
 
     def get(self, request, *args, **kwargs):
-        profesorjefe = self.get_queryset()
+        profesorjefe = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'profesorjefes': profesorjefe,
             'encabezado': 'Listado Profesor Jefe',
             'menu': 'Tablas Profesor Jefe',
             'submenu': 'Tablas fijas / Profesor Jefe',
-            'titulo': 'Profesor Jefe'
+            'titulo': 'Profesor Jefe',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
 @login_required
 def editarprofesorjefe(request,pk):
     profesorjefe = ProfesorJefe.objects.get(id=pk)
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual 
+
     template_name = 'editar_profesorjefe.html'
     data = {
-        'form': ProfesorjefeForm(instance=profesorjefe)
+        'form': ProfesorjefeForm(instance=profesorjefe, colegio_id=colegio_id)
     }
 
     if request.method == 'POST':
-        formulario = ProfesorjefeForm(data=request.POST, instance=profesorjefe)
+        formulario = ProfesorjefeForm(data=request.POST, instance=profesorjefe,colegio_id=colegio_id)
 
         if formulario.is_valid():
             formulario.save()
             return redirect('listaprofesorjefes')
         else:
             data = {
-                'form': ProfesorjefeForm(instance=profesorjefe),
+                'form': ProfesorjefeForm(instance=profesorjefe,colegio_id=colegio_id),
                 'msg': 'Ha ocurrido un eror en el formulario revise los datos'
             }
             return render(request,template_name,context=data)
@@ -2144,13 +2337,16 @@ def editarprofesorjefe(request,pk):
 
 @login_required
 def creaprofesorjefe(request):
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual 
     template_name = 'editar_profesorjefe.html'
     data = {
-        'form': ProfesorjefeForm()
+        'form': ProfesorjefeForm(colegio_id=colegio_id)
     }
 
     if request.method == 'POST':
-        formulario = ProfesorjefeForm(data=request.POST)
+        formulario = ProfesorjefeForm(data=request.POST,colegio_id=colegio_id)
         if formulario.is_valid():
             formulario.save()
             return redirect(to="listaprofesorjefes")
@@ -2185,14 +2381,21 @@ class Vista_Responsableasignatura(LoginRequiredMixin, ListView):
         return self.model.objects.filter(asignatura__colegio__id = colegio_id).order_by('persona')
 
     def get(self, request, *args, **kwargs):
-        profesorresponsable = self.get_queryset()
+        profesorresponsable = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'profesorresponsables': profesorresponsable,
             'encabezado': 'Listado Responsable Asignatura',
             'menu': 'Tablas Responsable Asignatura',
             'submenu': 'Tablas fijas / Responsable Asignatura',
-            'titulo': 'Responsable Asignatura'
+            'titulo': 'Responsable Asignatura',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 
@@ -2262,14 +2465,21 @@ class Vista_Responsablesuperior(LoginRequiredMixin, ListView):
         return self.model.objects.filter(subarea__area__colegio__id = colegio_id).order_by('persona')
 
     def get(self, request, *args, **kwargs):
-        responsablesuperior = self.get_queryset()
+        responsablesuperior = self.get_queryset(request)
+        current_user = request.user
+        accesocolegio = AccesoColegio.objects.filter(user=current_user.id).first()
+        colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+        
+        # Obtener el objeto Colegio
+        colegio = Colegio.objects.get(id=colegio_id)
 
         contexto = {
             'responsablesuperiores': responsablesuperior,
             'encabezado': 'Listado Responsable Superior',
             'menu': 'Tablas Responsable Superior',
             'submenu': 'Tablas fijas / Responsable Superior',
-            'titulo': 'Responsable Superior'
+            'titulo': 'Responsable Superior',
+            'colegio': colegio,
         }
         return render(request, self.template_name, contexto)
 

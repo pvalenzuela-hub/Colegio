@@ -16,7 +16,8 @@ Including another URLconf
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path
-from . views import PasswordsChangeView, password_success, Registrouser, Vista_Personas, Vista_Ciclos, Vista_Colegios, Vista_Niveles, Vista_Cursos,Vista_Areas,Vista_Subareas,Vista_Tiporespuesta, Vista_Responsablesubareanivel, Vista_Coordinadorciclo, Vista_Profesorjefe, Vista_Responsableasignatura, Vista_Responsablesuperior, VisorHistorialcaso
+from . views import PasswordsChangeView, password_success, Registrouser, Vista_Personas, Vista_Ciclos, Vista_Colegios, Vista_Niveles, Vista_Cursos,Vista_Areas,Vista_Subareas,Vista_Tiporespuesta, Vista_Responsablesubareanivel, Vista_Coordinadorciclo, Vista_Profesorjefe, Vista_Responsableasignatura, Vista_Responsablesuperior, VisorHistorialcaso,CustomLogoutView
+
 from . import views
 from django.contrib.auth.views import LoginView, LogoutView
 
@@ -26,7 +27,7 @@ urlpatterns = [
     # path('errorcorreo', views.error_correo, name = 'errorcorreo'),
 
     #########################################################
-    path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
+    # path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     #path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
     path('formulario_respuesta_colegio/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_colegio, name='formulario_respuesta_colegio'),
@@ -63,8 +64,9 @@ urlpatterns = [
     path('cierrapantalla', views.cierrapantalla, name = 'cierrapantalla'),
 #####################################< control de usuarios >###############################################
     path('login/', LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', LogoutView.as_view(), name='logout'),
-    path('accounts/logout/', LogoutView.as_view(), name='logout'),
+    
+    path('logout/', CustomLogoutView.as_view(), name='logout'),
+    # path('accounts/logout/', CustomLogoutView.as_view(), name='logout'),
     path('edituser/<int:pk>', views.edituser, name='edit-user'),
     path('listausers',views.Listausuarios.as_view(),name='list-users'),
     path('registro/', views.Registrouser,  name='registro-usuario'),
@@ -96,6 +98,8 @@ urlpatterns = [
     path('creapersona/', views.creapersona,  name='crea-persona'),
     path('listaciclos', Vista_Ciclos.as_view(), name='listaciclos'),
     path('editciclo/<int:pk>', views.editarciclo, name='editar-ciclo'),
+    path('creaciclo/', views.creaciclo, name='crea-ciclo'),
+    path('eliminarciclo/<int:pk>', views.eliminarciclo, name='eliminar-ciclo'),
     path('listacolegios', Vista_Colegios.as_view(), name='listacolegios'),
     path('editcolegio/<int:pk>', views.editarcolegio, name='editar-colegio'),
     path('listaniveles', Vista_Niveles.as_view(), name='listaniveles'),
