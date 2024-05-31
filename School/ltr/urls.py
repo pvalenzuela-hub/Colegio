@@ -34,8 +34,8 @@ urlpatterns = [
     path('formulario_respuesta_apoderado/<int:ticket_id>/<int:mensaje_id>/', views.formulariorespuesta_apoderado, name='formulario_respuesta_apoderado'),
    
     ###################### formulario de registro de ticket ############################
-    path('registroticket', views.registroticket, name='registroticket'),
-    path('registrocasos', views.registrocasos, name='registrocasos'),
+    path('laabadia', views.laabadia, name='laabadia'),
+    path('colegioprueba', views.colegioprueba, name='colegioprueba'),
 
     ###################################################################################
 

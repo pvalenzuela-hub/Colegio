@@ -797,17 +797,19 @@ def cierrapantalla(request):
     return render(request,'cierra_pantalla.html', contexto)
 
 
-def registroticket(request):
+def laabadia(request):
     # Registro Ticket Colegio Abadía Id=1
     # Vista Personalizada para Colegio Id = 1
     ' Colegio 1'
     colegio_id = 1  # ID del Colegio 1
+    colegio = get_object_or_404(Colegio, id = colegio_id)
     niveles = Nivel.objects.filter(ciclo__colegio_id=colegio_id).order_by('orden')
     cursos = Curso.objects.filter(colegio_id=colegio_id).order_by('orden')
     tipocontactos = Tipocontacto.objects.filter(colegio_id=colegio_id)
     # areas = Area.objects.filter(colegio_id = colegio_id)
     subareas = Subarea.objects.filter(area__colegio_id=colegio_id).order_by('area')
     # asignatura = Asignatura.objects.filter(colegio_id=colegio_id).order_by('orden')
+    logoprincipal = colegio.logoprincipal
 
     template_name = "formulario_ticket.html"
     contexto = {
@@ -815,12 +817,13 @@ def registroticket(request):
         'cursos': cursos,
         'tipocontactos': tipocontactos,
         'subareas': subareas,
+        'logoprincipal': logoprincipal
         # 'asignaturas': asignatura,
 
     }
     return render(request, template_name, contexto)
 
-def registrocasos(request):
+def colegioprueba(request):
     # Registro Ticket Colegio 2
     # Vista Personalizada para Colegio Id = 2
     ' Colegio 2'
@@ -1137,9 +1140,13 @@ class VisorTicket(LoginRequiredMixin,DetailView):
         personaresponsableasignatura = Personas.objects.filter(
             id__in=[r.persona.id for r in responsableprofesor]).first()
 
+        print ('ticket.subarea.profejefe -->', ticket.subarea.profejefe)
+
         profesorjefe = []
         if ticket.subarea.profejefe:
             profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
+            profejefe = Personas.objects.filter(id__in=[r.persona.id for r in profesorjefe]).first()
+            print ('profejefe.nombre -->', profejefe.nombre)
         
         responsable_asignatura = []
         if ticket.asignatura.id > 1:
@@ -1157,7 +1164,7 @@ class VisorTicket(LoginRequiredMixin,DetailView):
             'responsableciclo': personaciclo,
             'responsablesuperrior': personasuperior,
             'responsableasignatura': responsable_asignatura,
-            'profesorjefe': profesorjefe,
+            'profesorjefe': profejefe,
             'user_id':user_id,
             'logoprincipal': logoprincipal
         }
