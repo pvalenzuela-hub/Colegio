@@ -2,7 +2,7 @@ from django.utils.decorators import method_decorator
 from django.utils import timezone
 
 from dateutil.relativedelta import relativedelta
-from django.db.models import Sum, Count, Avg, ExpressionWrapper, F, Func, DurationField,IntegerField, FloatField
+from django.db.models import Sum, Count, Avg, ExpressionWrapper, F, DurationField, Q
 from django.db.models.functions import ExtractYear, ExtractMonth, Extract
 from django.db import connection,transaction
 
@@ -1143,6 +1143,7 @@ class VisorTicket(LoginRequiredMixin,DetailView):
         print ('ticket.subarea.profejefe -->', ticket.subarea.profejefe)
 
         profesorjefe = []
+        profejefe = []
         if ticket.subarea.profejefe:
             profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
             profejefe = Personas.objects.filter(id__in=[r.persona.id for r in profesorjefe]).first()
@@ -1396,6 +1397,7 @@ def chart_tpromedioprimrespuesta(request):
             values.append(dato['average_response_time_days'])
             names.append(dato['subarea__area__nombre'])
 
+        max_dias = int(max(values)) + 1
         # Crear el objeto de gráfico en el formato esperado por eCharts
         chart_data = {
             'legend': {
@@ -1404,14 +1406,28 @@ def chart_tpromedioprimrespuesta(request):
                 },
             'xAxis': {
                 'type': 'value',
-                'boundaryGap': '[0.8, 0]'
+                'boundaryGap': '[0.8, 0]',
+                'axisLabel': {
+                    'interval': 1,  # Para asegurar que cada valor se muestre
+                    'formatter': '{value} días'  # Agregar etiqueta de días
+                    },
+                'min': 0,
+                'max': max_dias,  # Define el valor máximo dinámicamente o un valor por defecto
+                'interval': 2  # Intervalo de los valores en el eje de x
                 },
             'yAxis': {
                 'type': 'category',
-                'data': names
+                'data': names,
+                'axisLabel': {
+                    'inside': False,
+                    'interval': 0,
+					'rotate': 50,
+					'margin': 2,
+					'fontSize': 8
+				    },
                 },
             'label': {
-                'show': 'true',
+                'show': True,
                 'position': 'inside'
                 },
             'series': [{ 'data': values, 'type': 'bar' }]
@@ -1479,11 +1495,11 @@ def chart_casostipocontacto(request):
                 'left': '3%',
                 'right': '4%',
                 'bottom': '3%',
-                'containLabel': 'true'
+                'containLabel': True
             },
             'xAxis': {
                 'type': 'category',
-                'boundaryGap': 'false',
+                'boundaryGap': False,
                 'data': periodos
             },
             'yAxis': {
@@ -1499,6 +1515,95 @@ def chart_casostipocontacto(request):
         }
 
     return JsonResponse(chart_data)
+
+def chart_tpromediocierre(request):
+    ##########################################
+    # Tiempo promedio cierre Ticket chart #4 #
+    ##########################################
+    current_user = request.user
+    accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
+    colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
+
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
+
+    q1 = Tipocontacto.objects.filter(nombre = 'Reclamo',colegio_id=colegio_id).first()
+    q2 = Tipocontacto.objects.filter(nombre = 'Consulta',colegio_id=colegio_id).first()
+
+    print (q1,q2)
+
+    # recoger los promedios de los tiempos de duración de los casos cerrados
+    results = Ticket.objects.filter(
+        Q(tipocontacto_id=q1.id) | Q(tipocontacto_id=q2.id),
+        subarea__area__colegio_id=colegio_id,
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_of_day,
+        estadoticket_id=5
+        ).annotate(
+            response_time=ExpressionWrapper(
+                F('fechahoracambioestado') - F('fechacreacion'),
+                output_field=DurationField()
+            )
+            ).values(
+                'subarea__area__nombre'
+                ).annotate(
+                    average_response_time=Avg('response_time')
+                    ).order_by('subarea__area__nombre')
+                    # Convertir duración promedio a días en Python
+
+    for result in results:
+        result['average_response_time_days'] = round(result['average_response_time'].total_seconds() / 86400,1)
+
+    #print (len(results))
+    chart_data = {}
+
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['average_response_time_days'])
+            names.append(dato['subarea__area__nombre'])
+
+        max_dias = int(max(values)) + 1
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'legend': {
+                'orient': 'horizontal',
+                'left': 'center'
+                },
+            'xAxis': {
+                'type': 'value',
+                'boundaryGap': '[0.8, 0]',
+                'axisLabel': {
+                    'interval': 1,  # Para asegurar que cada valor se muestre
+                    'formatter': '{value} días'  # Agregar etiqueta de días
+                    },
+                'min': 0,
+                'max': max_dias,  # Define el valor máximo dinámicamente o un valor por defecto
+                'interval': 2  # Intervalo de los valores en el eje de x
+                },
+            'yAxis': {
+                'type': 'category',
+                'data': names,
+                'axisLabel': {
+                    'inside': False,
+                    'interval': 0,
+					'rotate': 0,
+					'margin': 5,
+					'fontSize': 11
+				},
+            },
+            'label': {
+                'show': True,
+                'position': 'inside'
+                },
+            'series': [{ 'data': values, 'type': 'bar' }]
+        }
+
+    return JsonResponse(chart_data)    
 ############################################ < Tablas > ###########################################
 class Vista_Personas(LoginRequiredMixin, ListView):
     template_name = 'vistaPersonas.html'

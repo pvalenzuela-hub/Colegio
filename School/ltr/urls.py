@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/casosporarea', views.chart_casosarea, name = 'chart1'),
     path('api/tiempopromedio', views.chart_tpromedioprimrespuesta, name = 'chart2'),
     path('api/casotipocontacto', views.chart_casostipocontacto, name = 'chart3'),
+    path('api/tiempototal', views.chart_tpromediocierre, name = 'chart4'),
     path('reportedirectorio', views.reporte_directorio, name = 'reportedirectorio'),
 ##############################< interfaz usuarios externos >###############################################
     path('consultacierrecaso/<int:pk>', views.consulta_cierre_caso, name = 'consultacierrecaso'),
