@@ -1,0 +1,353 @@
+{% extends 'components/versions/vertical/light_externo.html' %}
+{% load static%}
+
+{% block styles %}
+<!--C3 CHARTS CSS -->
+<link href="{% static ''%}assets/plugins/charts-c3/c3-chart.css" rel="stylesheet" />
+{% endblock styles %}
+
+{% block body %}
+<!-- PAGE-HEADER -->
+<div class="card">
+	<h1 class="page-title" align="center" style="color: #004A99">{{ colegio.nombre }}</h1>
+	<div class="wideget-user-img">
+		<img src="{{ logoprincipal }}" alt="logo" height="85px">
+	</div>
+</div>
+<div class="page-header">
+	<div>
+		<input type="hidden" id="colegio_id" value="{{ colegio_id }}">
+		<h1 class="page-title">Reporte Directorio</h1>
+	</div>
+</div>
+<!-- PAGE-HEADER END -->
+
+<!-- ROW-1 OPEN -->
+<div class="row">
+	<div class="col-lg-6 col-md-12">
+		<div class="card">
+			<div class="card-header">
+				<h5><strong>Reclamos por Area</strong> (últimos 12 meses)</h5>
+
+			</div>
+			<div class="card-body">
+				<div id="chart1" class="chartsh"></div>
+			</div>
+		</div>
+	</div>
+	<div class="col-lg-6 col-md-12">
+		<div class="card">
+			<div class="card-header">
+				<h5><strong>Tiempo Promedio : Primera Respuesta por Area</strong> (últimos 12 meses)</h5>
+				
+			</div>
+			<div class="card-body">
+				<div id="chart2" class="chartsh"></div>
+			</div>
+		</div>
+	</div><!-- COL-END -->
+</div>
+<div class="row">
+	<div class="col-lg-6 col-md-12">
+		<div class="card">
+			<div class="card-header">
+				<h5><strong>Casos en el Tiempo </strong> (últimos 12 meses) </h5>
+				
+			</div>
+			<div class="card-body">
+				<div id="chart3" class="chartsh"></div>
+			</div>
+		</div>
+	</div>
+	<div class="col-lg-6 col-md-12">
+		<div class="card">
+			<div class="card-header">
+				<h5><strong>Tiempo Promedio : Duración de Casos tipo Reclamos y Consultas </strong> (últimos 12 meses)</h5>
+			</div>
+			<div class="card-body">
+				<div id="chart4" class="chartsh"></div>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row" id="user-profile">
+	<div class="col-lg-12">
+		<div class="card">
+			<h1 class="page-title" align="center" style="color: #004A99">Casos Totales {{ colegio.nombre }}</h1>
+			<div class="border-top">
+				<div class="wideget-user-tab">
+					<div class="tab-menu-heading">
+						<div class="tabs-menu1">
+							<ul class="nav">
+								<li class=""><a href="#tab-61" class="active show" data-bs-toggle="tab">Primera Respuesta</a></li>
+								<li><a href="#tab-71" data-bs-toggle="tab" class="">Conversación Colegio</a></li>
+								<li><a href="#tab-81" data-bs-toggle="tab" class="">Conversación Apoderado</a></li>
+								<li><a href="#tab-91" data-bs-toggle="tab" class="">Cerrado</a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="tab-content">
+			<div class="tab-pane active show" id="tab-61">
+				<ul class="widget-users row  mb-5">
+					<div class="row row-sm">
+						<div class="col-lg-12">
+							<div class="card">
+								<div class="card-header">
+									<h3 class="card-title">Esperando Primera Respuesta del Colegio</h3>
+								</div>
+								<div class="card-body">
+									<div class="table-responsive">
+										<table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
+											<thead>
+												<tr align="center">
+													<th class="wd-15p border-bottom-0">Caso N°</th>
+													<th class="wd-15p border-bottom-0">Tipo Contacto</th>
+													<th class="wd-20p border-bottom-0">Tema Contacto</th>
+													<th class="wd-20p border-bottom-0">Nivel/Curso</th>
+													<th class="wd-20p border-bottom-0">Fecha Ingreso</th>
+													<th class="wd-20p border-bottom-0">Visor</th>
+												</tr>
+											</thead>
+											<tbody>
+												
+												{% for resp in primeraresp %}
+													<tr>
+														<td align="center">{{ resp.numticket }}</td>
+														<td align="center" style="color:{{ resp.tipocontacto.color }} "><strong>{{ resp.tipocontacto.nombre }}</strong> </td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ resp.subarea.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{resp.subarea.area }}</span>
+																</div>
+															</div>
+														</td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ resp.nivel.nombre }}</h6>
+																	<span class="fs-12 text-muted" style="text-align: center;">{{resp.curso.nombre }}</span>
+																</div>
+															</div>
+														</td>
+														<td class="text-muted fs-15 fw-semibold">{{resp.fechacreacion|date:"d/m/Y"}}</td>
+
+														<td align="center" class="">
+															<a class="btn-primary btn" href="{% url 'visorhistorialcaso' resp.id %}"><i class="fa fa-address-card-o fa-2x"></i></a>
+														</td>
+
+													</tr>
+												{% endfor %}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</ul>
+			</div> <!--end tab61-->
+			<div class="tab-pane" id="tab-71">
+				<ul class="widget-users row  mb-5">
+					<div class="row row-sm">
+						<div class="col-lg-12">
+							<div class="card">
+								<div class="card-header">
+									<h3 class="card-title">Conversación Colegio</h3>
+								</div>
+								<div class="card-body">
+									<div class="table-responsive">
+										<table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
+											<thead>
+												<tr align="center">
+													<th class="wd-15p border-bottom-0">Caso N°</th>
+													<th class="wd-15p border-bottom-0">Tipo Contacto</th>
+													<th class="wd-20p border-bottom-0">Tema Contacto</th>
+													<th class="wd-20p border-bottom-0">Nivel/Curso</th>
+													<th class="wd-20p border-bottom-0">Fecha Ingreso</th>
+													<th class="wd-20p border-bottom-0">Visor</th>
+												</tr>
+											</thead>
+											<tbody>
+												{% for acc in convercolegio %}
+													<tr>
+														<td align="center">{{ acc.numticket }}</td>
+														<td align="center" style="color:{{ acc.tipocontacto.color }} "><strong>{{ acc.tipocontacto.nombre }}</strong> </td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ acc.subarea.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{acc.subarea.area }}</span>
+																</div>
+															</div>
+														</td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ acc.nivel.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{acc.curso.nombre }}</span>
+																</div>
+															</div>
+														</td>
+														<td class="text-muted fs-15 fw-semibold">{{acc.fechacreacion|date:"d/m/Y"}}</td>
+
+														<td align="center" class="">
+															<a class="btn-primary btn" href="{% url 'visorhistorialcaso' acc.id %}"><i class="fa fa-address-card-o fa-2x"></i></a>
+														</td>
+
+													</tr>
+												{% endfor %}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</ul>
+
+			</div> <!--end tab71-->
+			<div class="tab-pane" id="tab-81">
+				<ul class="widget-users row  mb-5">
+					<div class="row row-sm">
+						<div class="col-lg-12">
+							<div class="card">
+								<div class="card-header">
+									<h3 class="card-title">Conversación Apoderado</h3>
+								</div>
+								<div class="card-body">
+									<div class="table-responsive">
+										<table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
+											<thead>
+												<tr align="center">
+													<th class="wd-15p border-bottom-0">Caso N°</th>
+													<th class="wd-15p border-bottom-0">Tipo Contacto</th>
+													<th class="wd-20p border-bottom-0">Tema Contacto</th>
+													<th class="wd-20p border-bottom-0">Nivel/Curso</th>
+													<th class="wd-20p border-bottom-0">Fecha Ingreso</th>
+													<th class="wd-20p border-bottom-0">Visor</th>
+												</tr>
+											</thead>
+											<tbody>
+												{% for cerr in converapoderado %}
+													<tr>
+														<td align="center">{{ cerr.numticket }}</td>
+														<td align="center" style="color:{{ cerr.tipocontacto.color }} "><strong>{{ cerr.tipocontacto.nombre }}</strong> </td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ cerr.subarea.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{cerr.subarea.area }}</span>
+																</div>
+															</div>
+														</td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ cerr.nivel.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{cerr.curso.nombre }}</span>
+																</div>
+															</div>
+														</td>
+														<td class="text-muted fs-15 fw-semibold">{{cerr.fechacreacion|date:"d/m/Y"}}</td>
+
+														<td align="center" class="">
+															<a class="btn-primary btn" href="{% url 'visorhistorialcaso' cerr.id %}"><i class="fa fa-address-card-o fa-2x"></i></a>
+														</td>
+
+													</tr>
+												{% endfor %}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</ul>
+
+			</div> <!--end tab81-->
+			<div class="tab-pane" id="tab-91">
+				<ul class="widget-users row  mb-5">
+					<div class="row row-sm">
+						<div class="col-lg-12">
+							<div class="card">
+								<div class="card-header">
+									<h3 class="card-title">Cerrados</h3>
+								</div>
+								<div class="card-body">
+									<div class="table-responsive">
+										<table class="table table-bordered text-nowrap border-bottom" id="basic-datatable">
+											<thead>
+												<tr align="center">
+													<th class="wd-15p border-bottom-0">Caso N°</th>
+													<th class="wd-15p border-bottom-0">Tipo Contacto</th>
+													<th class="wd-20p border-bottom-0">Tema Contacto</th>
+													<th class="wd-20p border-bottom-0">Nivel/Curso</th>
+													<th class="wd-20p border-bottom-0">Fecha Ingreso</th>
+													<th class="wd-20p border-bottom-0">Visor</th>
+												</tr>
+											</thead>
+											<tbody>
+												{% for cerr in cerrado %}
+													<tr>
+														<td align="center">{{ cerr.numticket }}</td>
+														<td align="center" style="color:{{ cerr.tipocontacto.color }} "><strong>{{ cerr.tipocontacto.nombre }}</strong> </td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ cerr.subarea.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{cerr.subarea.area }}</span>
+																</div>
+															</div>
+														</td>
+														<td>
+															<div class="d-flex">
+																<div class="ms-2 mt-0 mt-sm-2 d-block">
+																	<h6 class="mb-0 fs-14 fw-semibold">{{ cerr.nivel.nombre }}</h6>
+																	<span class="fs-12 text-muted">{{cerr.curso.nombre }}</span>
+																</div>
+															</div>
+														</td>
+														<td class="text-muted fs-15 fw-semibold">{{cerr.fechacreacion|date:"d/m/Y"}}</td>
+
+														<td align="center" class="">
+															<a class="btn-primary btn" href="{% url 'visorhistorialcaso' cerr.id %}"><i class="fa fa-address-card-o fa-2x"></i></a>
+														</td>
+
+													</tr>
+												{% endfor %}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</ul>
+
+			</div> <!--end tab91-->
+
+
+	</div><!-- COL-END -->
+</div><!--row-->
+<!-- ROW-2 CLOSE -->
+{% endblock body %}
+
+{% block scripts %}
+<!-- C3 CHART JS -->
+<script src="{% static ''%}assets/plugins/charts-c3/d3.v5.min.js"></script>
+<script src="{% static ''%}assets/plugins/charts-c3/c3-chart.js"></script>
+
+<!-- C3-PIE CHART JS
+		<script src="{% static ''%}assets/js/charts.js"></script> -->
+
+<!--- Apache ECharts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+<!--- Custom JS -->
+<script src="{% static 'js/reporte-colegio.js' %}"></script>
+
+{% endblock scripts %}

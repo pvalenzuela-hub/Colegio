@@ -108,8 +108,7 @@
                     <div class="tab-menu-heading">
                         <div class="tabs-menu1">
                             <ul class="nav">
-                                <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Descripción</a>
-                                </li>
+                                <li class=""><a href="#tab-51" class="active show" data-bs-toggle="tab">Descripción</a></li>
                                 <li><a href="#tab-61" data-bs-toggle="tab" class="">Seguimiento</a></li>
                                 <li><a href="#tab-71" data-bs-toggle="tab" class="">Responsable</a></li>
                                 <!-- <li><a href="#tab-81" data-bs-toggle="tab" class="">Tareas</a></li> -->
@@ -173,10 +172,10 @@
                                             <td><strong>Tipo contacto :</strong> {{ ticket.tipocontacto.nombre }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Tema contacto :</strong> {{ ticket.subarea.area.nombre }}</td>
+                                            <td><strong>Area :</strong> {{ ticket.subarea.area.nombre }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Sub-tema contacto :</strong> {{ ticket.subarea.nombre }} </td>
+                                            <td><strong>Sub Area :</strong> {{ ticket.subarea.nombre }} </td>
                                         </tr>
                                         <tr>
                                             <td><strong>Detalle:</strong></td>
@@ -275,7 +274,7 @@
                                             <tbody class="col-lg-12 col-xl-6 p-0">
                                                 <tr>
                                                     <td><strong>Area Responsable :</strong> {{ ticket.subarea.area.nombre }}</td>
-                                                    <td><strong>Tema : </strong>{{ ticket.subarea.nombre }}</td>
+                                                    <td><strong>Sub Area : </strong>{{ ticket.subarea.nombre }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td><strong>RESPONSABLE (SubArea y Nivel)</strong></td>

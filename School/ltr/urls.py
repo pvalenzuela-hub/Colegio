@@ -58,6 +58,13 @@ urlpatterns = [
     path('api/casotipocontacto', views.chart_casostipocontacto, name = 'chart3'),
     path('api/tiempototal', views.chart_tpromediocierre, name = 'chart4'),
     path('reportedirectorio', views.reporte_directorio, name = 'reportedirectorio'),
+####################################### Reporte Colegio ###################################################
+    path('api/chart1_colegio/', views.chart1_colegio, name='chart1_colegio'),
+    # path('api/chart1_colegio/<int:colegio_id>/', views.chart1_colegio, name='chart1_colegio'),
+    path('api/chart2_colegio/', views.chart2_colegio, name = 'chart2_colegio'),
+    path('api/chart3_colegio/', views.chart3_colegio, name = 'chart3_colegio'),
+    path('api/chart4_colegio/', views.chart4_colegio, name = 'chart4_colegio'),
+    path('reporte_colegio/<int:colegio_id>', views.reporte_directorio_colegio, name = 'reporte_colegio'),
 ##############################< interfaz usuarios externos >###############################################
     path('consultacierrecaso/<int:pk>', views.consulta_cierre_caso, name = 'consultacierrecaso'),
     path('confirmacierrecaso', views.confirma_cierre_caso, name = 'confirmacierrecaso'),
@@ -78,16 +85,16 @@ urlpatterns = [
     # path('login', LoginView.as_view(), name='login'),
 
        # Password Reset Process
-   path('reset_password/',
+    path('reset_password/',
         auth_views.PasswordResetView.as_view(template_name="accounts/password_reset.html"),
         name = 'reset_password'),
-   path('accounts/password_reset/done/',
+    path('accounts/password_reset/done/',
         auth_views.PasswordResetDoneView.as_view(template_name="accounts/password_reset/password_reset_sent.html"),
         name = 'password_reset_done'),
-   path('accounts/reset/<uidb64>/<token>/',
+    path('accounts/reset/<uidb64>/<token>/',
         auth_views.PasswordResetConfirmView.as_view(template_name="accounts/password_reset_form.html"),
         name = 'password_reset_confirm'),
-   path('accounts/reset/done/',
+    path('accounts/reset/done/',
         auth_views.PasswordResetCompleteView.as_view(template_name="accounts/password_reset_done.html"),
         name = 'password_reset_complete'),
 # #####< PRUEBAS >##################################################################################    

@@ -32,14 +32,19 @@
                                             </div>
                                             <div>
                                                 
-                                                <label class="form-label" for="motivocierre">Elija una de los siguientes motivos de cierre de Caso</label><span class="required-input">*</span>
+                                                <label class="form-label" for="motivocierre">Elija una de los siguientes motivos de cierre de Caso desde la lista</label><span class="required-input">*</span>
                                                 <select class="form-control" id="motivocierre" name="motivocierre" required="">
                                                     <option value="" selected disabled>---------</option>
                                                     {% for m in motivos %}
                                                         <option value="{{ m.id }}">{{ m.nombre }}</option>
                                                     {% endfor %}
                                                 </select>
+
                                                
+                                            </div>
+                                            <div>
+                                                <label class="form-label" for="motivocierre">Escriba las razones por la cual se debe cerrar el Caso</label>
+                                                <div class="input-group"><span class="input-group-text"><i class="fa fa-user-o"></i></span><input class="form-control" type="text" id="textocierre" name="textocierre" required="" placeholder="Razón del cierre"></div>
                                             </div>
                                         {% endif %}
                                         <div>

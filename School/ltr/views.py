@@ -25,7 +25,7 @@ from django.core.serializers import serialize
 
 from django.http import HttpResponse, HttpResponseRedirect,JsonResponse
 
-from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe, TipoRespuestaColegio, Mensaje, Ciclos, Colegio, Motivocierre, AccesoColegio
+from . models import Nivel, Curso, Tipocontacto, Area, Subarea, Ticket, Seguimiento, Estadoticket, ResponsableSubareaNivel, ResponsableSuperior, CoordinadorCiclo, Personas, ProfesorResponsable, Asignatura, ProfesorJefe, TipoRespuestaColegio, Mensaje, Ciclos, Colegio, Motivocierre, AccesoColegio, Ticketcerrado
 from django.views.generic import ListView, DetailView
 from django.views.decorators.csrf import csrf_protect
 
@@ -62,51 +62,6 @@ class PasswordsChangeView(PasswordChangeView):
 
 def password_success(request):
     return render(request, 'registration/password_success.html')
-
-def envia_correo(request):
-    # remitente
-    remitente = 'bienestar@colegiolaabadia.cl'
-    password = 'Abadia2024'
-
-    # remitente = 'negocio.paulo@gmail.com'
-    # password = 'paulo_2106'
-
-    # datos destinatario
-    destinatario = 'pvalenzuela@coaniquem.org'
-
-    # crear el mensaje
-    mensaje = MIMEMultipart()
-    mensaje["From"] = remitente
-    mensaje["To"] = destinatario
-    mensaje["Subject"] = "Ejemplo de formulario por mail"
-
-    # Contenido del mensaje
-    cuerpo = """
-    Hola .
-
-    Por favor, responde este correo unicamente presionando el link a continuación:
-    <a href="http://127.0.0.1:8000/formulario_respuesta">Responder al formulario</a>
-
-    Gracias.
-    """
-    mensaje.attach(MIMEText(cuerpo, "html"))
-
-    # Configurar el servidor SMTP
-    smtp = smtplib.SMTP("smtp.gmail.com", 587)
-    smtp.starttls()
-    smtp.login(remitente, password)
-
-    # Enviar el Mensaje
-    smtp.sendmail(remitente, destinatario, mensaje.as_string())
-
-    # Cerrar la conexión SMTP
-    smtp.quit()
-
-# def obtener_destinatarios_unicos(responsables):
-#     # Recolecta IDs de Persona de los responsables
-#     persona_ids = {responsable.persona.id for responsable in responsables}
-#     # Retorna una lista de direcciones de correo, asegurando que no hay duplicados
-#     return Personas.objects.filter(id__in=persona_ids).values_list('correo', flat=True).distinct()
 
 def obtener_destinatarios_unicos(responsables):
     # Recolecta IDs de Persona de los responsables
@@ -187,7 +142,9 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
         email_config = settings.EMAIL_BACKENDS.get(from_email)
         print ('email_config -->', email_config)
         print ('destino -->', destino)
-        colegio = Colegio.objects.get(id=ticket.id)
+        colegio_id = ticket.subarea.area.colegio.id
+        print ('colegio_id ->', colegio_id)
+        colegio = Colegio.objects.get(id=colegio_id)
         logoprincipal = colegio.logoprincipal
         logofirma = colegio.logofirma
 
@@ -239,6 +196,8 @@ def enviar_correo(subject, message, to_adr, ticket,mensaje, ticketnuevo, destina
         mail.attach_alternative(content, 'text/html')
         mail.send()
 
+        print ('retorno: True')
+
         return True
 
     except Exception as e:
@@ -266,7 +225,7 @@ def envia_primer_correo_colegio(request):
     area = ticket.subarea.area.nombre
 
     personas_destinatarias, principal = obtener_destinatarios_ticket(ticket.id)
-   
+
     if principal == None:
         # Crea Seguimiento
         Seguimiento.objects.create(
@@ -277,12 +236,12 @@ def envia_primer_correo_colegio(request):
         )
 
         return redirect(f'/{ticket.id}')
-        
+
     to_adr = [persona.correo for persona in personas_destinatarias]
 
     asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
 
-    #emisor = 'bienestar@colegiolaabadia.cl'
+
     emisor = email_config['EMAIL_HOST_USER']
     #print ('envia_primer_correo_colegio: emisor -->', emisor)
 
@@ -314,32 +273,44 @@ def envia_primer_correo_colegio(request):
             colegio.setting_name,
             1
         )
+        print ('envio-->', envio)
 
         if not envio:
             return redirect(f'/{ticket.id}')
 
-        # Actualiza Ticket
-        nuevo_estado = get_object_or_404(Estadoticket, id=2)
-        fec = datetime.today()
-        ticket.fechaprimerenvio = fec
-        ticket.estadoticket = nuevo_estado
-        ticket.fechahoracambioestado = fec
-        ticket.save()
-
-        # Crea Seguimiento
+       # Crea Seguimiento
         Seguimiento.objects.create(
             ticket=ticket,
             comentario=f'se deriva caso al área {area}',
-            user=user,
-            fechahora=fec
+            user=user
         )
-        print ('colegio.setting_name -->', colegio.setting_name)
+
+        print ('actualiza ticket')
+        # Actualiza Ticket
+        nuevo_estado = get_object_or_404(Estadoticket, id=2)
+
+        fec = datetime.today()
+        print(f'Ticket ID: {ticket.id}')
+        print(f'Fecha Primer Envio: {fec}')
+        print(f'Nuevo Estado: {nuevo_estado}')
+
+        ticket.fechaprimerenvio = fec
+        ticket.estadoticket = nuevo_estado
+        ticket.fechahoracambioestado = fec
+        ticket.fechaaviso2 = fec
+        ticket.save()
+
+
+       # print ('colegio.setting_name -->', colegio.setting_name)
 
 
     except Exception as e:
+        print (e)
         return redirect(f'/{ticket.id}')
 
     return redirect(f'/{ticket.id}')
+
+
 
 def formulariorespuesta_colegio(request, ticket_id, mensaje_id):
     ##############################################################################
@@ -439,15 +410,12 @@ def respuesta_colegio(request):
             mensaje.respondido = 1
             mensaje.save()
 
+            estado = 0
             fechahoracambioestado = datetime.today()
             if tiporespuesta == '1':
                 # da respuesta al Apoderado
                 estado = 4
                 estadoticket = Estadoticket.objects.get(id=estado)
-
-                if ticket.estadoticket_id == 2:
-                    # guardar fecha y hora de primera respuesta del colegio
-                    ticket.fechaprimerarespuesta = fechahoracambioestado
 
             if tiporespuesta == '2':
                 # se mantiene el caso del lado del Colegio
@@ -458,11 +426,17 @@ def respuesta_colegio(request):
                 estado=5
                 estadoticket = Estadoticket.objects.get(id=estado)
 
+            if ticket.estadoticket_id == 2:
+                # guardar fecha y hora de primera respuesta del colegio
+                ticket.fechaprimerarespuesta = fechahoracambioestado
+
+            if estado == 3:
+                ticket.fechaaviso3 = fechahoracambioestado
 
             ticket.fechahoracambioestado = fechahoracambioestado
             ticket.estadoticket_id = estadoticket.id
+         
             ticket.save()
-
 
             # crea seguimiento con datos de respuesta del colegio al apoderado
             user = get_object_or_404(User, username='bridge')
@@ -619,6 +593,14 @@ def respuesta_apoderado(request):
          
 
             if envio:
+                # cambia estadoticket a Espera del Colegio
+                nuevo_estado = get_object_or_404(Estadoticket, id=3)
+                fec = datetime.today()
+                ticket.estadoticket = nuevo_estado
+                ticket.fechahoracambioestado = fec
+                ticket.fechaaviso3 = fec
+                ticket.save()
+
                 contexto = {
                     'texto': 'Le responderemos a la brevedad',
                     'logoprincipal': logoprincipal
@@ -689,10 +671,14 @@ class VisorHistorialcaso(DetailView):
         personaresponsableasignatura = Personas.objects.filter(
             id__in=[r.persona.id for r in responsableprofesor]).first()
 
+
         profesorjefe = []
+        profejefe = []
         if ticket.subarea.profejefe:
             profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
-        
+            profejefe = Personas.objects.filter(id__in=[r.persona.id for r in profesorjefe]).first()
+
+       
         responsable_asignatura = []
         if ticket.asignatura.id > 1:
             responsable_asignatura = personaresponsableasignatura
@@ -710,7 +696,7 @@ class VisorHistorialcaso(DetailView):
             'responsableciclo': personaciclo,
             'responsablesuperrior': personasuperior,
             'responsableasignatura': responsable_asignatura,
-            'profesorjefe': profesorjefe,
+            'profesorjefe': profejefe,
             'logoprincipal': logoprincipal,
         }
         return render(request, self.template_name, contexto)
@@ -742,6 +728,7 @@ def confirma_cierre_caso(request):
         idticket = request.POST['idticket']
         tipocierre = request.POST['motivocierre']
         persona = request.POST['persona']
+        textocierre = request.POST['textocierre']
         ticket = get_object_or_404(Ticket, id = idticket)
         motivocierre = get_object_or_404(Motivocierre, id = tipocierre)
         personaemisor = get_object_or_404(Personas, id=persona)
@@ -756,6 +743,13 @@ def confirma_cierre_caso(request):
         ticket.motivocierre_id = motivocierre.id
         ticket.save()
 
+        ### crea TicketCerrado
+        Ticketcerrado.objects.create(
+            ticket = ticket,
+            textocierre = textocierre,
+            persona = personaemisor
+            )
+
         ### crear Mensaje ###
         motivocierre = motivocierre.nombre
         Mensaje.objects.create(
@@ -764,7 +758,7 @@ def confirma_cierre_caso(request):
             correodestino="",
             respondido=1,
             asunto="CIERRA CASO",
-            message=f'{personaemisor.nombre} ha cerrado el caso, con el siguiente motivo: {motivocierre}',
+            message=f'{personaemisor.nombre} ha cerrado el caso, con el siguiente motivo: {motivocierre}. Mensaje opcional: {textocierre}',
             persona=personaemisor
         )
         ### crear Seguimiento ###
@@ -797,7 +791,7 @@ def cierrapantalla(request):
     return render(request,'cierra_pantalla.html', contexto)
 
 
-def laabadia(request):
+def colegioprueba(request):
     # Registro Ticket Colegio Abadía Id=1
     # Vista Personalizada para Colegio Id = 1
     ' Colegio 1'
@@ -823,7 +817,7 @@ def laabadia(request):
     }
     return render(request, template_name, contexto)
 
-def colegioprueba(request):
+def laabadia(request):
     # Registro Ticket Colegio 2
     # Vista Personalizada para Colegio Id = 2
     ' Colegio 2'
@@ -928,22 +922,24 @@ def creaticket(request):
         to_adr = [persona.correo for persona in personas_destinatarias]
         asunto = ticket.tipocontacto.nombre+' - '+ticket.subarea.nombre+' - '+ticket.nombre+' '+ticket.apellido
 
-        #emisor = 'bienestar@colegiolaabadia.cl'
+        
         emisor = email_config['EMAIL_HOST_USER']
         #print ('envia_primer_correo_colegio: emisor -->', emisor)
 
         message = f"De: {emisor}\n Para: {principal.correo}\n Asunto: {asunto}\n Mensaje: {ticket.motivo}"
         try:
             # Crea Mensaje
-            nuevo_mensaje = Mensaje.objects.create(
-                ticket=ticket,
-                correoemisor=emisor,
-                correodestino=principal.correo,
-                respondido=0,
-                asunto=asunto,
-                message=message,
-                persona=principal
-            )
+            # nuevo_mensaje = Mensaje.objects.create(
+            #     ticket=ticket,
+            #     correoemisor=emisor,
+            #     correodestino=principal.correo,
+            #     respondido=0,
+            #     asunto=asunto,
+            #     message=message,
+            #     persona=principal
+            # )
+
+
             # Envia Primer Correo al colegio
             envio = enviar_correo(
                 asunto,
@@ -961,7 +957,7 @@ def creaticket(request):
             if not envio:
                 Seguimiento.objects.create(
                     ticket=ticket,
-                    comentario='Ha ocurrido un error en el envío del Correo, función enviar_correo.',
+                    comentario='Ha ocurrido un error en el envío del Correo.',
                     user=user,
                     fechahora=fechahoracambioestado
                 )
@@ -988,6 +984,8 @@ def creaticket(request):
             ticket.fechaprimerenvio = fechahoracambioestado
             ticket.estadoticket = nuevo_estado
             ticket.fechahoracambioestado = fechahoracambioestado
+            ticket.fechaaviso2 = fechahoracambioestado
+
             ticket.save()
 
             # Crea Seguimiento
@@ -1120,6 +1118,7 @@ class VisorTicket(LoginRequiredMixin,DetailView):
         nivel = get_object_or_404(Nivel, id=ticket.nivel.id)
         colegio = Colegio.objects.get(id=ticket.subarea.area.colegio.id)
         logoprincipal = colegio.logoprincipal
+        cerrados = Ticketcerrado.objects.filter(ticket_id=ticket.id).first()
 
 
 ##########
@@ -1140,14 +1139,13 @@ class VisorTicket(LoginRequiredMixin,DetailView):
         personaresponsableasignatura = Personas.objects.filter(
             id__in=[r.persona.id for r in responsableprofesor]).first()
 
-        print ('ticket.subarea.profejefe -->', ticket.subarea.profejefe)
 
         profesorjefe = []
         profejefe = []
         if ticket.subarea.profejefe:
             profesorjefe = ProfesorJefe.objects.filter(nivel=nivel, curso=ticket.curso)
             profejefe = Personas.objects.filter(id__in=[r.persona.id for r in profesorjefe]).first()
-            print ('profejefe.nombre -->', profejefe.nombre)
+            
         
         responsable_asignatura = []
         if ticket.asignatura.id > 1:
@@ -1167,7 +1165,8 @@ class VisorTicket(LoginRequiredMixin,DetailView):
             'responsableasignatura': responsable_asignatura,
             'profesorjefe': profejefe,
             'user_id':user_id,
-            'logoprincipal': logoprincipal
+            'logoprincipal': logoprincipal,
+            'textocierre': cerrados,
         }
         return render(request, self.template_name, contexto)
 
@@ -1294,14 +1293,17 @@ def edituser(request, pk):
 
     return render(request,template_name, data)
 
-############################################ < Gráficos > #########################################
+############################################ < Reporte > #########################################
+@login_required
 def reporte_directorio(request):
     return render(request,'chartpie.html')
 
+
+
 def chart_casosarea(request):
-    #####################
-    # Reclamos por AREA #
-    #####################
+    ################################
+    # Reclamos por AREA - chart 1 #
+    ################################
     ## Falta filtrar por Colegio
     current_user = request.user
     accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
@@ -1315,9 +1317,9 @@ def chart_casosarea(request):
     results = Ticket.objects.filter(subarea__area__colegio_id=colegio_id,
         fechacreacion__gte=start_date,
         fechacreacion__lte=end_of_day
-        ).values('subarea__area__nombre').annotate(
+        ).values('subarea__area__nombreabr').annotate(
             total=Count('id')
-            ).order_by('subarea__area__nombre')
+            ).order_by('subarea__area__nombreabr')
 
     if (len(results) > 0):
         # Crear listas para los valores y nombres
@@ -1325,7 +1327,7 @@ def chart_casosarea(request):
         names = []
         for dato in results:
             values.append(dato['total'])
-            names.append(dato['subarea__area__nombre'])
+            names.append(dato['subarea__area__nombreabr'])
 
         # Crear el objeto de gráfico en el formato esperado por eCharts
         chart_data = {
@@ -1342,7 +1344,7 @@ def chart_casosarea(request):
             'series': [
                 {
                     'type': 'pie',
-                    'radius': '80%',
+                    'radius': '90%',
                     'data': [{'value': value, 'name': name} for value, name in zip(values, names)],
 
                     'label': {
@@ -1357,9 +1359,9 @@ def chart_casosarea(request):
 
 
 def chart_tpromedioprimrespuesta(request):
-    #####################################
-    # Tiempo promedio primera respuesta #
-    #####################################
+    ###############################################
+    # Tiempo promedio primera respuesta chart 2 #
+    ###############################################
     current_user = request.user
     accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
     colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
@@ -1379,8 +1381,8 @@ def chart_tpromedioprimrespuesta(request):
                 F('fechaprimerarespuesta') - F('fechaprimerenvio'),
                 output_field=DurationField()
             )).values(
-                'subarea__area__nombre').annotate(
-                    average_response_time=Avg('response_time')).order_by('subarea__area__nombre')
+                'subarea__area__nombreabr').annotate(
+                    average_response_time=Avg('response_time')).order_by('subarea__area__nombreabr')
 
     # Convertir duración promedio a días en Python
     for result in results:
@@ -1395,7 +1397,7 @@ def chart_tpromedioprimrespuesta(request):
         names = []
         for dato in results:
             values.append(dato['average_response_time_days'])
-            names.append(dato['subarea__area__nombre'])
+            names.append(dato['subarea__area__nombreabr'])
 
         max_dias = int(max(values)) + 1
         # Crear el objeto de gráfico en el formato esperado por eCharts
@@ -1436,9 +1438,9 @@ def chart_tpromedioprimrespuesta(request):
     return JsonResponse(chart_data)
 
 def chart_casostipocontacto(request):
-    #####################################
-    # Casos por AñoMes y Tipo Contacto  #
-    #####################################
+    ################################################
+    # Casos por AñoMes y Tipo Contacto - chart 3 #
+    ################################################
     current_user = request.user
     accesocolegio = AccesoColegio.objects.filter(user = current_user.id).first()
     colegio_id = accesocolegio.colegioactual_id  # ID del Colegio Actual
@@ -1446,7 +1448,6 @@ def chart_casostipocontacto(request):
     start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
     start_date = start_date.replace(day=1)
     # start_of_day = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
-
 
     end_date = date.today()
     # end_of_day = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
@@ -1547,10 +1548,10 @@ def chart_tpromediocierre(request):
                 output_field=DurationField()
             )
             ).values(
-                'subarea__area__nombre'
+                'subarea__area__nombreabr'
                 ).annotate(
                     average_response_time=Avg('response_time')
-                    ).order_by('subarea__area__nombre')
+                    ).order_by('subarea__area__nombreabr')
                     # Convertir duración promedio a días en Python
 
     for result in results:
@@ -1565,7 +1566,168 @@ def chart_tpromediocierre(request):
         names = []
         for dato in results:
             values.append(dato['average_response_time_days'])
-            names.append(dato['subarea__area__nombre'])
+            names.append(dato['subarea__area__nombreabr'])
+
+        max_dias = int(max(values)) + 1
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'legend': {
+                'orient': 'horizontal',
+                'left': 'center'
+                },
+            'xAxis': {
+                'type': 'value',
+                'boundaryGap': '[0.8, 0]',
+                'axisLabel': {
+                    'interval': 1,  # Para asegurar que cada valor se muestre
+                    'formatter': '{value}'  # Agregar etiqueta de días
+                    },
+                'min': 0,
+                'max': max_dias,  # Define el valor máximo dinámicamente o un valor por defecto
+                'interval': 2  # Intervalo de los valores en el eje de x
+                },
+            'yAxis': {
+                'type': 'category',
+                'data': names,
+                'axisLabel': {
+                    'inside': False,
+                    'interval': 0,
+					'rotate': 0,
+					'margin': 5,
+					'fontSize': 11
+				},
+            },
+            'label': {
+                'show': True,
+                'position': 'inside'
+                },
+            'series': [{ 'data': values, 'type': 'bar' }]
+        }
+
+    return JsonResponse(chart_data)    
+
+################################# Reportes Colegio ##################################
+
+def reporte_directorio_colegio(request,colegio_id):
+    template_name = 'chartcolegio.html'
+    colegio = get_object_or_404(Colegio, id = colegio_id)
+    logoprincipal = colegio.logoprincipal
+
+    primeraresp = Ticket.objects.filter(
+        subarea__area__colegio_id=colegio_id, estadoticket_id=2).order_by('fechacreacion').reverse()
+    convercolegio = Ticket.objects.filter(
+        subarea__area__colegio_id=colegio_id, estadoticket_id=3).order_by('fechacreacion').reverse()
+    converapoderado = Ticket.objects.filter(
+        subarea__area__colegio_id=colegio_id, estadoticket_id=4).order_by('fechacreacion').reverse()
+    cerrado = Ticket.objects.filter(
+        subarea__area__colegio_id=colegio_id, estadoticket_id=5).order_by('fechacreacion').reverse()
+
+
+    print ('primeraresp -->', primeraresp)
+    contexto = {
+        'colegio_id': colegio_id,
+        'primeraresp': primeraresp,
+        'convercolegio': convercolegio,
+        'converapoderado': converapoderado,
+        'cerrado': cerrado,
+        'colegio': colegio,
+        'logoprincipal': logoprincipal
+    }
+    return render(request,template_name,contexto)
+
+def chart1_colegio(request):
+    ###################################
+    # < Reclamos por AREA - chart 1 > #
+    ###################################
+    colegio_id = request.GET.get('colegio_id')  # Obtener el parámetro de la URL
+    
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
+
+    results = Ticket.objects.filter(subarea__area__colegio_id=colegio_id,
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_of_day
+        ).values('subarea__area__nombreabr').annotate(
+            total=Count('id')
+            ).order_by('subarea__area__nombreabr')
+
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['total'])
+            names.append(dato['subarea__area__nombreabr'])
+
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'title': {
+                'text': ''
+            },
+            'tooltip': {
+                'trigger': 'item'
+            },
+            'legend': {
+                'orient': 'vertical',
+                'left': 'left'
+            },
+            'series': [
+                {
+                    'type': 'pie',
+                    'radius': '90%',
+                    'data': [{'value': value, 'name': name} for value, name in zip(values, names)],
+
+                    'label': {
+                        'show': False
+                    },
+                }
+            ]
+           
+        }
+        
+        return JsonResponse(chart_data)
+
+
+def chart2_colegio(request):
+    ###############################################
+    # Tiempo promedio primera respuesta chart 2 #
+    ###############################################
+    colegio_id = request.GET.get('colegio_id')  # Obtener el parámetro de la URL
+
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
+
+    # recoger los promedios de los tiempos de respuesta para los casos que hayan tenido primerarespuesta
+    results = Ticket.objects.filter(subarea__area__colegio_id = colegio_id,
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_of_day,
+        fechaprimerarespuesta__isnull=False
+        ).annotate(
+            response_time=ExpressionWrapper(
+                F('fechaprimerarespuesta') - F('fechaprimerenvio'),
+                output_field=DurationField()
+            )).values(
+                'subarea__area__nombreabr').annotate(
+                    average_response_time=Avg('response_time')).order_by('subarea__area__nombreabr')
+
+    # Convertir duración promedio a días en Python
+    for result in results:
+        result['average_response_time_days'] = round(result['average_response_time'].total_seconds() / 86400,1)
+
+    #print (len(results))
+    chart_data = {}
+
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['average_response_time_days'])
+            names.append(dato['subarea__area__nombreabr'])
 
         max_dias = int(max(values)) + 1
         # Crear el objeto de gráfico en el formato esperado por eCharts
@@ -1591,6 +1753,170 @@ def chart_tpromediocierre(request):
                 'axisLabel': {
                     'inside': False,
                     'interval': 0,
+					'rotate': 50,
+					'margin': 2,
+					'fontSize': 8
+				    },
+                },
+            'label': {
+                'show': True,
+                'position': 'inside'
+                },
+            'series': [{ 'data': values, 'type': 'bar' }]
+        }
+
+    return JsonResponse(chart_data)
+
+def chart3_colegio(request):
+    ################################################
+    # Casos por AñoMes y Tipo Contacto - chart 3 #
+    ################################################
+    colegio_id = request.GET.get('colegio_id')  # Obtener el parámetro de la URL
+
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    # start_of_day = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
+
+
+    end_date = date.today()
+    # end_of_day = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
+    end_of_day = end_date + timedelta(days=1)
+
+
+    results = Ticket.objects.filter(subarea__area__colegio_id = colegio_id,
+        fechacreacion__gte = start_date,
+        fechacreacion__lte = end_of_day
+    ).annotate(
+        agno=ExtractYear('fechacreacion'),  # Extrae el año de la fecha de creación
+        mes=ExtractMonth('fechacreacion'),  # Extrae el mes de la fecha de creación
+        tipo=F('tipocontacto__nombre')  # tipocontacto
+    ).values(
+        'agno',
+        'mes',
+        'tipo'  # Agrupar por año, mes y tipo de contacto
+    ).annotate(
+        count=Count('id')  # Contar el número de tickets por grupo
+    ).order_by('agno', 'mes', 'tipo')  # Ordenar los resultados por año, mes y tipo de contacto
+
+    # Organizar los datos
+    periodos = sorted(set(f"{dato['mes']:02}/{dato['agno']}" for dato in results))
+    tipos = sorted(set(dato['tipo'] for dato in results))
+
+    # Crear una estructura para los datos
+    data = {tipo: [0] * len(periodos) for tipo in tipos}
+    periodo_indices = {periodo: i for i, periodo in enumerate(periodos)}
+
+
+    # Llenar la estructura con los conteos
+    for dato in results:
+        periodo = f"{dato['mes']:02}/{dato['agno']}"
+        tipo = dato['tipo']
+        index = periodo_indices[periodo]
+        data[tipo][index] = dato['count']
+
+    # Crear la estructura JSON
+    chart_data = {}
+    if (len(results) > 0):
+        chart_data = {
+            "legend": {
+                "data": tipos
+            },
+            'grid': {
+                'left': '3%',
+                'right': '4%',
+                'bottom': '3%',
+                'containLabel': True
+            },
+            'xAxis': {
+                'type': 'category',
+                'boundaryGap': False,
+                'data': periodos
+            },
+            'yAxis': {
+                    'type': 'value'
+            },
+            "series": [
+                {
+                    "name": tipo,
+                    "type": "line",
+                    "data": counts
+                } for tipo, counts in data.items()
+            ]
+        }
+
+    return JsonResponse(chart_data)
+
+def chart4_colegio(request):
+    ##########################################
+    # Tiempo promedio cierre Ticket chart #4 #
+    ##########################################
+    colegio_id = request.GET.get('colegio_id')  # Obtener el parámetro de la URL
+
+    start_date = date.today().replace(day=1) - timedelta(days=1) - relativedelta(months=11)
+    start_date = start_date.replace(day=1)
+    end_date = date.today()
+    end_of_day = end_date + timedelta(days=1)
+
+    q1 = Tipocontacto.objects.filter(nombre = 'Reclamo',colegio_id=colegio_id).first()
+    q2 = Tipocontacto.objects.filter(nombre = 'Consulta',colegio_id=colegio_id).first()
+
+    # recoger los promedios de los tiempos de duración de los casos cerrados
+    results = Ticket.objects.filter(
+        Q(tipocontacto_id=q1.id) | Q(tipocontacto_id=q2.id),
+        subarea__area__colegio_id=colegio_id,
+        fechacreacion__gte=start_date,
+        fechacreacion__lte=end_of_day,
+        estadoticket_id=5
+        ).annotate(
+            response_time=ExpressionWrapper(
+                F('fechahoracambioestado') - F('fechacreacion'),
+                output_field=DurationField()
+            )
+            ).values(
+                'subarea__area__nombreabr'
+                ).annotate(
+                    average_response_time=Avg('response_time')
+                    ).order_by('subarea__area__nombreabr')
+                    # Convertir duración promedio a días en Python
+
+    for result in results:
+        result['average_response_time_days'] = round(result['average_response_time'].total_seconds() / 86400,1)
+
+    #print (len(results))
+    chart_data = {}
+
+    if (len(results) > 0):
+        # Crear listas para los valores y nombres
+        values = []
+        names = []
+        for dato in results:
+            values.append(dato['average_response_time_days'])
+            names.append(dato['subarea__area__nombreabr'])
+
+        max_dias = int(max(values)) + 1
+        # Crear el objeto de gráfico en el formato esperado por eCharts
+        chart_data = {
+            'legend': {
+                'orient': 'horizontal',
+                'left': 'center'
+                },
+            'xAxis': {
+                'type': 'value',
+                'boundaryGap': '[0.8, 0]',
+                'axisLabel': {
+                    'interval': 1,  # Para asegurar que cada valor se muestre
+                    'formatter': '{value}'  # Agregar etiqueta de días
+                    },
+                'min': 0,
+                'max': max_dias,  # Define el valor máximo dinámicamente o un valor por defecto
+                'interval': 2  # Intervalo de los valores en el eje de x
+                },
+            'yAxis': {
+                'type': 'category',
+                'data': names,
+                'axisLabel': {
+                    'inside': False,
+                    'interval': 0,
 					'rotate': 0,
 					'margin': 5,
 					'fontSize': 11
@@ -1603,7 +1929,7 @@ def chart_tpromediocierre(request):
             'series': [{ 'data': values, 'type': 'bar' }]
         }
 
-    return JsonResponse(chart_data)    
+    return JsonResponse(chart_data)        
 ############################################ < Tablas > ###########################################
 class Vista_Personas(LoginRequiredMixin, ListView):
     template_name = 'vistaPersonas.html'

@@ -36,6 +36,7 @@ class Area(models.Model):
     id = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     colegio = models.ForeignKey(Colegio,on_delete=models.CASCADE)
+    nombreabr = models.CharField(max_length=50,default="",null=True)
 
     def __str__(self):
         return self.nombre
@@ -235,6 +236,8 @@ class Ticket(models.Model):
     numticket = models.IntegerField(default=0,null=True)
     personacierre = models.ForeignKey(Personas, on_delete=models.DO_NOTHING,null=True)
     motivocierre = models.ForeignKey(Motivocierre, on_delete=models.DO_NOTHING,null=True)
+    fechaaviso2 = models.DateField(null=True,blank=True)
+    fechaaviso3 = models.DateField(null=True,blank=True)
 
     def save(self, *args, **kwargs):
         if not self.pk:  # Verifica si el objeto es nuevo
@@ -351,4 +354,16 @@ class AccesoColegio(models.Model):
         ordering = ['user']
         db_table = 'AccesoColegio'
 
+class Ticketcerrado(models.Model):
+    id = models.AutoField(primary_key=True)
+    ticket = models.ForeignKey(Ticket, on_delete=models.DO_NOTHING)
+    textocierre = models.CharField(max_length=200, null=False)
+    fechacierre = models.DateTimeField(auto_now=True)
+    persona = models.ForeignKey(Personas, on_delete=models.DO_NOTHING,null=True)
 
+    def __str__(self):
+        return str(self.ticket)+' - '+self.textocierre
+
+    class Meta:
+        ordering = ['ticket']
+        db_table = 'TicketCerrados'
