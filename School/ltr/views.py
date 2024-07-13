@@ -10,7 +10,6 @@ from .form import UserForm, PasswordChangingForm, CustomCreationForm, PersonasFo
 from django.urls import reverse_lazy,reverse
 
 from django.shortcuts import render, redirect, get_object_or_404
-
 #################################################################################################
 import smtplib
 from email.mime.multipart import MIMEMultipart
