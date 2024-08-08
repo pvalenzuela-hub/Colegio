@@ -26,7 +26,7 @@ urlpatterns = [
     ####################### ERROR ###################################
     # path('errorcorreo', views.error_correo, name = 'errorcorreo'),
 
-    #########################################################
+    
     # path('prueba/', views.pruebacorreo, name = 'envia_correo_colegio'),
     # path('enviocolegio/', views.envio_correo_colegio, name = 'envia_correo'),
     #path('formulario_respuesta_colegio/<int:ticket_id>', views.formulariorespuesta_colegio, name='formulario_respuesta'),
@@ -36,6 +36,7 @@ urlpatterns = [
     ###################### formulario de registro de ticket ############################
     path('laabadia', views.laabadia, name='laabadia'),
     path('colegioprueba', views.colegioprueba, name='colegioprueba'),
+    path('bhs', views.bhs, name='colegiobhs'),
 
     ###################################################################################
 

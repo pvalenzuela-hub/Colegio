@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     'ltr',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,15 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+
+CORS_ALLOWED_ORIGINS = [
+    'http://bridgecomms.pythonanywhere.com'
+]
+
+CORS_ALLOW_METHODS = [
+    'GET',
 ]
 
 ROOT_URLCONF = "School.urls"
@@ -148,7 +158,7 @@ HTML_MINIFY = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
-# STATICFILES_DIRS = [STATIC_DIR]
+STATICFILES_DIRS = [STATIC_DIR]
 
 
 # Default primary key field type
@@ -158,7 +168,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # SMTP Configuration
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
+# 1: Colegio Prueba
+# 2: Colegio La Abadía
+# 3: Colegio BHS
+# 4: Colegio PDV
 EMAIL_BACKENDS = {
     'correo2': {
         'EMAIL_BACKEND' : 'django.core.mail.backends.smtp.EmailBackend',
@@ -175,25 +188,16 @@ EMAIL_BACKENDS = {
         'EMAIL_USE_TLS' : True,
         'EMAIL_HOST_USER' : 'negocio.paulo@gmail.com',
         'EMAIL_HOST_PASSWORD' : 'jpfr glyl pgcv gayx',
-
+    },
+     'correo3': {
+        'EMAIL_BACKEND' : 'django.core.mail.backends.smtp.EmailBackend',
+        'EMAIL_HOST' : 'smtp.gmail.com',
+        'EMAIL_PORT' : 587,
+        'EMAIL_USE_TLS' : True,
+        'EMAIL_HOST_USER' : 'bienestarbhs@gmail.com',
+        'EMAIL_HOST_PASSWORD' : 'xvum osik pwjr jlrv',
     }
 }
 
 
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['console'],
-#             'level': 'DEBUG',
-#         },
-#     },
-# }
